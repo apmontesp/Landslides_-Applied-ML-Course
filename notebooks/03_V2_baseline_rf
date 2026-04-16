@@ -1,0 +1,117 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Notebook 03: Baseline Optimizado (Balanceado)\n",
+    "**Proyecto:** Detección de deslizamientos | EAFIT\n",
+    "\n",
+    "Versión corregida para superar el AUC de 0.55 mediante balanceo de clases y mayor resolución de textura."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from google.colab import drive\n",
+    "import os, h5py\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "from pathlib import Path\n",
+    "from tqdm.auto import tqdm\n",
+    "from skimage.feature import hog\n",
+    "from sklearn.ensemble import RandomForestClassifier\n",
+    "from sklearn.model_selection import StratifiedKFold\n",
+    "from sklearn.metrics import f1_score, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc\n",
+    "\n",
+    "drive.mount('/content/drive')\n",
+    "\n",
+    "base_path = Path('/content/drive/MyDrive/Landslide4Sense')\n",
+    "img_dirs = list(base_path.glob('**/TrainData/img'))\n",
+    "if img_dirs:\n",
+    "    train_img_dir = img_dirs[0]\n",
+    "    train_mask_dir = train_img_dir.parent / \"mask\"\n",
+    "    img_list = sorted(list(train_img_dir.glob(\"*.h5\")))\n",
+    "    mask_list = sorted(list(train_mask_dir.glob(\"*.h5\")))\n",
+    "    print(f\"✅ {len(img_list)} muestras listas.\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "N_SAMPLES = 1000 \n",
+    "X, y = [], []\n",
+    "\n",
+    "for i in tqdm(range(min(N_SAMPLES, len(img_list))), desc=\"Extrayendo\"):\n",
+    "    with h5py.File(img_list[i], \"r\") as hf:\n",
+    "        patch = hf[list(hf.keys())[0]][()]\n",
+    "    with h5py.File(mask_list[i], \"r\") as hf:\n",
+    "        mask = hf[list(hf.keys())[0]][()]\n",
+    "    \n",
+    "    rgb = patch[:,:,[3,2,1]]\n",
+    "    rgb_norm = ((rgb - np.min(rgb)) / (np.ptp(rgb) + 1e-8) * 255).astype(\"uint8\")\n",
+    "    \n",
+    "    # MEJORA: pixels_per_cell de 8x8 para mayor detalle\n",
+    "    feats_hog = hog(rgb_norm, pixels_per_cell=(8,8), cells_per_block=(2,2), channel_axis=-1, feature_vector=True)\n",
+    "    avg_slope = np.mean(patch[:,:,12])\n",
+    "    \n",
+    "    X.append(np.hstack([feats_hog, avg_slope]))\n",
+    "    y.append(int(np.max(mask) > 0))\n",
+    "\n",
+    "X, y = np.array(X), np.array(y)\n",
+    "print(f\"✓ Dataset: {X.shape}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\n",
+    "f1_scores = []\n",
+    "\n",
+    "for fold, (t_idx, v_idx) in enumerate(skf.split(X, y)):\n",
+    "    # --- CAMBIO CRÍTICO AQUÍ: Balanceo de clases ---\n",
+    "    rf = RandomForestClassifier(\n",
+    "        n_estimators=200, \n",
+    "        n_jobs=-1, \n",
+    "        random_state=42, \n",
+    "        class_weight='balanced_subsample'\n",
+    "    )\n",
+    "    rf.fit(X[t_idx], y[t_idx])\n",
+    "    \n",
+    "    preds = rf.predict(X[v_idx])\n",
+    "    f1 = f1_score(y[v_idx], preds)\n",
+    "    f1_scores.append(f1)\n",
+    "\n",
+    "# Visualización de resultados\n",
+    "y_probs = rf.predict_proba(X[v_idx])[:, 1]\n",
+    "fpr, tpr, _ = roc_curve(y[v_idx], y_probs)\n",
+    "roc_auc = auc(fpr, tpr)\n",
+    "\n",
+    "fig, ax = plt.subplots(1, 2, figsize=(15, 5))\n",
+    "ConfusionMatrixDisplay(confusion_matrix(y[v_idx], preds)).plot(cmap='Blues', ax=ax[0])\n",
+    "ax[1].plot(fpr, tpr, label=f'AUC = {roc_auc:.3f}')\n",
+    "ax[1].plot([0,1],[0,1],'k--')\n",
+    "ax[1].set_title(\"Curva ROC Balanceada\")\n",
+    "ax[1].legend()\n",
+    "plt.show()\n",
+    "\n",
+    "print(f\"Nuevo AUC: {roc_auc:.4f}\")"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": { \"display_name\": \"Python 3\", \"name\": \"python3\" },\n",
+  "language_info": { \"name\": \"python\" }\n",
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}
