@@ -1,7 +1,5 @@
 # ============================================================
-# configs/efficientnet_b4.yaml
-# Hiperparámetros para EfficientNet-B4 fine-tuned — Landslide4Sense
-# Uso: python scripts/run_training.py --config configs/efficientnet_b4.yaml
+# Hiperparámetros ajustados para estabilidad en Google Colab
 # ============================================================
 
 experiment_name: efficientnet_b4_finetuned
@@ -19,11 +17,11 @@ n_folds: 5
 seed: 42
 
 # ── Entrenamiento ─────────────────────────────────────────────
-# EfficientNet-B4 tiene 19M params (vs 25M de ResNet-50).
-# Batch más pequeño por mayor memoria por imagen (resolución escalada).
+# Reducimos batch_size para evitar Out of Memory (OOM)
+# Bajamos num_workers para evitar bloqueos con Google Drive
 epochs: 50
-batch_size: 24
-num_workers: 4
+batch_size: 16       # <--- CAMBIO: De 24 a 16 para seguridad en T4 GPU
+num_workers: 2       # <--- CAMBIO: De 4 a 2 para estabilidad en Colab
 pin_memory: true
 
 # ── Optimizador ───────────────────────────────────────────────
@@ -40,13 +38,11 @@ eta_min: 0.0000001
 
 # ── Función de pérdida ────────────────────────────────────────
 loss: weighted_bce
-pos_weight: 0.703
+pos_weight: 0.703   # Basado en la proporción de positivos detectada
 
-# ── Umbral ────────────────────────────────────────────────────
+# ── Umbral y Early Stopping ───────────────────────────────────
 threshold: 0.5
 optimize_threshold: true
-
-# ── Early Stopping ────────────────────────────────────────────
 early_stopping: true
 patience: 15
 monitor: val_f1
@@ -71,9 +67,3 @@ pretrained_weights: imagenet
 
 # ── Hardware ──────────────────────────────────────────────────
 device: auto
-
-# ── Logging ───────────────────────────────────────────────────
-log_interval: 10
-save_best_only: true
-tensorboard: true
-verbose: true
