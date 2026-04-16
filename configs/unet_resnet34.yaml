@@ -1,0 +1,83 @@
+# ============================================================
+# configs/unet_resnet34.yaml
+# Hiperparámetros para U-Net + ResNet-34 segmentación — Landslide4Sense
+# Uso: python scripts/run_training.py --config configs/unet_resnet34.yaml
+# ============================================================
+
+experiment_name: unet_resnet34_segmentation
+model_arch: unet_resnet34
+
+# ── Rutas ────────────────────────────────────────────────────
+data_root: ./data
+output_dir: ./results/unet_resnet34
+checkpoint_dir: ./checkpoints/unet_resnet34
+
+# ── Dataset ──────────────────────────────────────────────────
+n_channels: 14
+patch_size: 128
+n_folds: 5
+seed: 42
+
+# ── Entrenamiento ─────────────────────────────────────────────
+# U-Net es más pesada en memoria por las skip connections.
+# Batch de 16 es adecuado para GPU de 8-16 GB.
+epochs: 60
+batch_size: 16
+num_workers: 4
+pin_memory: true
+
+# ── Optimizador ───────────────────────────────────────────────
+optimizer: adamw
+lr_head: 0.0001
+lr_backbone: 0.00001
+weight_decay: 0.0001
+# Para U-Net no se congela el backbone — el decoder necesita gradientes
+# del encoder desde el principio para las skip connections
+freeze_epochs: 0
+
+# ── Scheduler ─────────────────────────────────────────────────
+scheduler: cosine
+T_max: 60
+eta_min: 0.0000001
+
+# ── Función de pérdida ────────────────────────────────────────
+# Dice + BCE: el Dice Loss es crítico para objetos pequeños (área mediana 2.04%)
+loss: dice_bce
+dice_weight: 0.5          # 50% Dice + 50% BCE ponderado
+pos_weight: 0.703
+
+# ── Umbral ────────────────────────────────────────────────────
+threshold: 0.5
+optimize_threshold: true
+
+# ── Early Stopping ────────────────────────────────────────────
+early_stopping: true
+patience: 15
+monitor: val_iou          # Para segmentación se monitorea IoU, no F1 de parche
+mode: max
+
+# ── Data Augmentation ─────────────────────────────────────────
+augmentation: true
+aug_hflip_prob: 0.5
+aug_vflip_prob: 0.5
+aug_rotate90_prob: 0.5
+aug_brightness_prob: 0.3
+aug_noise_prob: 0.2
+aug_noise_std: 0.02
+
+# ── Normalización ─────────────────────────────────────────────
+normalize: true
+norm_strategy: per_channel
+
+# ── Preentrenamiento ──────────────────────────────────────────
+pretrained: true
+pretrained_weights: imagenet
+
+# ── Hardware ──────────────────────────────────────────────────
+device: auto
+
+# ── Logging ───────────────────────────────────────────────────
+log_interval: 10
+save_best_only: true
+tensorboard: true
+verbose: true

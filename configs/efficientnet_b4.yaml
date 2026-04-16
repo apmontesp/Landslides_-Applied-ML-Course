@@ -1,0 +1,79 @@
+# ============================================================
+# configs/efficientnet_b4.yaml
+# Hiperparámetros para EfficientNet-B4 fine-tuned — Landslide4Sense
+# Uso: python scripts/run_training.py --config configs/efficientnet_b4.yaml
+# ============================================================
+
+experiment_name: efficientnet_b4_finetuned
+model_arch: efficientnet_b4
+
+# ── Rutas ────────────────────────────────────────────────────
+data_root: ./data
+output_dir: ./results/efficientnet_b4
+checkpoint_dir: ./checkpoints/efficientnet_b4
+
+# ── Dataset ──────────────────────────────────────────────────
+n_channels: 14
+patch_size: 128
+n_folds: 5
+seed: 42
+
+# ── Entrenamiento ─────────────────────────────────────────────
+# EfficientNet-B4 tiene 19M params (vs 25M de ResNet-50).
+# Batch más pequeño por mayor memoria por imagen (resolución escalada).
+epochs: 50
+batch_size: 24
+num_workers: 4
+pin_memory: true
+
+# ── Optimizador ───────────────────────────────────────────────
+optimizer: adamw
+lr_head: 0.0001
+lr_backbone: 0.00001
+weight_decay: 0.0001
+freeze_epochs: 5
+
+# ── Scheduler ─────────────────────────────────────────────────
+scheduler: cosine
+T_max: 50
+eta_min: 0.0000001
+
+# ── Función de pérdida ────────────────────────────────────────
+loss: weighted_bce
+pos_weight: 0.703
+
+# ── Umbral ────────────────────────────────────────────────────
+threshold: 0.5
+optimize_threshold: true
+
+# ── Early Stopping ────────────────────────────────────────────
+early_stopping: true
+patience: 15
+monitor: val_f1
+mode: max
+
+# ── Data Augmentation ─────────────────────────────────────────
+augmentation: true
+aug_hflip_prob: 0.5
+aug_vflip_prob: 0.5
+aug_rotate90_prob: 0.5
+aug_brightness_prob: 0.3
+aug_noise_prob: 0.2
+aug_noise_std: 0.02
+
+# ── Normalización ─────────────────────────────────────────────
+normalize: true
+norm_strategy: per_channel
+
+# ── Preentrenamiento ──────────────────────────────────────────
+pretrained: true
+pretrained_weights: imagenet
+
+# ── Hardware ──────────────────────────────────────────────────
+device: auto
+
+# ── Logging ───────────────────────────────────────────────────
+log_interval: 10
+save_best_only: true
+tensorboard: true
+verbose: true

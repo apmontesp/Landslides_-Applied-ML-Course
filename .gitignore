@@ -1,0 +1,124 @@
+# ============================================================
+# .gitignore — Landslide4Sense ML Project
+# ============================================================
+
+# ── Dataset (demasiado grande para git) ──────────────────────
+data/TrainData/
+data/ValidData/
+data/TestData/
+data/*.h5
+data/*.zip
+data/*.tar.gz
+*.h5
+*.hdf5
+
+# ── Resultados y checkpoints ─────────────────────────────────
+results/
+!results/.gitkeep
+checkpoints/
+runs/
+outputs/
+eda_outputs/
+*.pth
+*.pt
+*.ckpt
+*.pkl
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+var/
+sdist/
+.installed.cfg
+MANIFEST
+*.pyc
+*.pyo
+
+# ── Entornos virtuales ────────────────────────────────────────
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ── Jupyter ───────────────────────────────────────────────────
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+*.ipynb_checkpoint
+
+# ── IDEs y editores ───────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+logs/
+tensorboard_logs/
+
+# ── Cobertura de pruebas ──────────────────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# ── Distribución / packaging ──────────────────────────────────
+*.egg-info/
+dist/
+build/
+
+# ── Variables de entorno (secretos) ──────────────────────────
+.env.local
+.env.*.local
+secrets.yaml
+kaggle.json
+
+# ── Archivos temporales ───────────────────────────────────────
+*.tmp
+*.bak
+*.orig
+tmp/
+temp/
+
+# ── Archivos locales (NO van a GitHub) ───────────────────────
+# Herramienta de desarrollo local (Cowork/Claude)
+CLAUDE.md
+
+# Artículo académico (documento Word local)
+Articulo_Final_LandslideDetection_ML.docx
+*.docx
+
+# Figuras sueltas generadas en la raíz (ver eda_outputs/ y docs/figures/)
+fig1_sample_images.png
+fig2_channel_histograms.png
+fig3_correlation_heatmap.png
+fig4_channel_stats.png
+fig5_leakage_check.png
+
+# Script EDA en ubicación antigua (ver scripts/run_eda.py)
+eda_landslide4sense.py
+
+# Notebook EDA legado (reemplazado por notebooks/00-07)
+notebooks/Landslide4Sense_EDA_Pipeline_legacy.ipynb
+
+# Carpetas de datos del dataset real (nunca en git)
+TrainData/
+ValidData/
+TestData/

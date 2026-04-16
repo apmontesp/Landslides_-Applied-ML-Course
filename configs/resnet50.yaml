@@ -1,0 +1,77 @@
+# ============================================================
+# configs/resnet50.yaml
+# Hiperparámetros para ResNet-50 fine-tuned — Landslide4Sense
+# Uso: python scripts/run_training.py --config configs/resnet50.yaml
+# ============================================================
+
+experiment_name: resnet50_finetuned
+model_arch: resnet50
+
+# ── Rutas ────────────────────────────────────────────────────
+data_root: ./data
+output_dir: ./results/resnet50
+checkpoint_dir: ./checkpoints/resnet50
+
+# ── Dataset ──────────────────────────────────────────────────
+n_channels: 14
+patch_size: 128
+n_folds: 5
+seed: 42
+
+# ── Entrenamiento ─────────────────────────────────────────────
+epochs: 50
+batch_size: 32
+num_workers: 4
+pin_memory: true
+
+# ── Optimizador ───────────────────────────────────────────────
+optimizer: adamw
+lr_head: 0.0001          # 1e-4 — cabeza de clasificación (nueva)
+lr_backbone: 0.00001     # 1e-5 — backbone preentrenado
+weight_decay: 0.0001
+freeze_epochs: 5         # Épocas con backbone congelado antes del fine-tuning completo
+
+# ── Scheduler ─────────────────────────────────────────────────
+scheduler: cosine
+T_max: 50
+eta_min: 0.0000001       # 1e-7
+
+# ── Función de pérdida ────────────────────────────────────────
+loss: weighted_bce
+pos_weight: 0.703        # n_neg/n_pos = 1568/2231 (EDA real)
+
+# ── Umbral ────────────────────────────────────────────────────
+threshold: 0.5
+optimize_threshold: true  # Buscar umbral óptimo en curva PR post-entrenamiento
+
+# ── Early Stopping ────────────────────────────────────────────
+early_stopping: true
+patience: 15
+monitor: val_f1
+mode: max
+
+# ── Data Augmentation ─────────────────────────────────────────
+augmentation: true
+aug_hflip_prob: 0.5
+aug_vflip_prob: 0.5
+aug_rotate90_prob: 0.5
+aug_brightness_prob: 0.3
+aug_noise_prob: 0.2
+aug_noise_std: 0.02
+
+# ── Normalización ─────────────────────────────────────────────
+normalize: true
+norm_strategy: per_channel   # Normalización Z-score por canal
+
+# ── Preentrenamiento ──────────────────────────────────────────
+pretrained: true
+pretrained_weights: imagenet
+
+# ── Hardware ──────────────────────────────────────────────────
+device: auto              # auto detecta CUDA > MPS > CPU
+
+# ── Logging ───────────────────────────────────────────────────
+log_interval: 10
+save_best_only: true
+tensorboard: true
+verbose: true
