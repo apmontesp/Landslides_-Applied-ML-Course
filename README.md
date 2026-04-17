@@ -3,7 +3,8 @@
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.1+-ee4c2c.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Dataset](https://img.shields.io/badge/Dataset-Landslide4Sense-green.svg)](https://www.kaggle.com/datasets/landslide4sense/competition)
+[![Dataset](https://img.shields.io/badge/Dataset-Landslide4Sense-green.svg)](https://www.kaggle.com/datasets/tekbahadurkshetri/landslide4sense)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/apmontesp/Landslides_-Applied-ML-Course/blob/main/notebooks/00_setup_verification.ipynb)
 
 > **Proyecto Final — Aprendizaje de Máquinas Aplicado a Inteligencia Artificial**  
 > Evaluación comparativa de arquitecturas CNN con fine-tuning para la detección automática de deslizamientos de tierra sobre imágenes multi-espectrales de 14 canales.
@@ -184,112 +185,85 @@ landslide4sense-ml/
 
 ## Instalación
 
-### Opción A — pip (recomendado para Colab)
+### Opción A — Google Colab (recomendado)
+
+Cada notebook tiene un badge **Open in Colab** — haz clic y ejecuta las celdas en orden. El dataset se carga desde Google Drive automáticamente.
+
+**Requisito:** Dataset en `MyDrive/Landslide4Sense/TrainData/` ([descargar en Kaggle](https://www.kaggle.com/datasets/tekbahadurkshetri/landslide4sense))
+
+### Opción B — Local con pip
 ```bash
-git clone https://github.com/TU_USUARIO/landslide4sense-ml.git
-cd landslide4sense-ml
+git clone https://github.com/apmontesp/Landslides_-Applied-ML-Course.git
+cd Landslides_-Applied-ML-Course
 pip install -r requirements.txt
 ```
 
-### Opción B — Conda
+### Opción C — Conda
 ```bash
-git clone https://github.com/TU_USUARIO/landslide4sense-ml.git
-cd landslide4sense-ml
+git clone https://github.com/apmontesp/Landslides_-Applied-ML-Course.git
+cd Landslides_-Applied-ML-Course
 conda env create -f environment.yml
 conda activate landslide4sense
-```
-
-### Google Colab
-```python
-# Montar Drive y clonar repositorio
-from google.colab import drive
-drive.mount('/content/drive')
-
-!git clone https://github.com/TU_USUARIO/landslide4sense-ml.git
-%cd landslide4sense-ml
-!pip install -r requirements.txt
 ```
 
 ---
 
 ## Uso Paso a Paso
 
-### 1. Verificar entorno
+### En Google Colab (recomendado)
+
+Ejecuta los notebooks en orden — cada uno guarda sus resultados automáticamente en Drive:
+
+| # | Notebook | Descripción | Resultados en Drive |
+|---|----------|-------------|-------------------|
+| 00 | `00_setup_verification.ipynb` | Verificación del entorno | — |
+| 01 | `01_eda_analysis.ipynb` | Análisis exploratorio | figuras EDA |
+| 02 | `02_preprocessing.ipynb` | Preprocesamiento | — |
+| 03 | `03_baseline_rf.ipynb` | Baseline Random Forest | `results/random_forest/` |
+| 04 | `04_resnet50.ipynb` | ResNet-50 fine-tuning | `results/resnet50/` |
+| 05 | `05_efficientnet_b4.ipynb` | EfficientNet-B4 fine-tuning | `results/efficientnet_b4/` |
+| 06 | `06_unet_segmentation.ipynb` | U-Net segmentación | `results/unet_resnet34/` |
+| 07 | `07_evaluation_comparison.ipynb` | Comparación final | `results/comparison_*.png` |
+
+### Desde CLI (local)
 ```bash
-python scripts/run_eda.py --data_root ./data --output_dir ./eda_outputs --check_only
-```
+# Entrenar ResNet-50
+python scripts/run_training.py --config configs/resnet50.yaml --data_root ./data
 
-### 2. EDA Completo
-```bash
-python scripts/run_eda.py \
-    --data_root ./data \
-    --output_dir ./results/eda \
-    --n_sample 100
-```
+# Evaluar y comparar
+python scripts/run_evaluation.py --results_dir ./results
 
-### 3. Entrenar un modelo
-```bash
-# ResNet-50 fine-tuning
-python scripts/run_training.py \
-    --config configs/resnet50.yaml \
-    --data_root ./data \
-    --output_dir ./results/resnet50
-
-# EfficientNet-B4
-python scripts/run_training.py \
-    --config configs/efficientnet_b4.yaml \
-    --data_root ./data \
-    --output_dir ./results/efficientnet_b4
-
-# U-Net segmentación
-python scripts/run_training.py \
-    --config configs/unet_resnet34.yaml \
-    --data_root ./data \
-    --output_dir ./results/unet
-```
-
-### 4. Evaluar y comparar todos los modelos
-```bash
-python scripts/run_evaluation.py \
-    --results_dir ./results \
-    --output_dir ./results/comparison
-```
-
-### 5. Pipeline completo (bash)
-```bash
-chmod +x scripts/run_all.sh
-./scripts/run_all.sh --data_root ./data
+# Pipeline completo
+chmod +x scripts/run_all.sh && ./scripts/run_all.sh --data_root ./data
 ```
 
 ---
 
 ## Resultados
 
-> Los valores reales se actualizarán tras ejecutar los experimentos.  
-> Los valores proyectados se basan en benchmarks publicados para Landslide4Sense.
+> ⏳ **En progreso** — Experimentos corriendo. Tabla se actualiza al completar cada modelo.  
+> Los valores marcados con `*` son proyectados basados en benchmarks publicados.
 
 ### Tabla Comparativa (5-Fold Cross-Validation)
 
-| Modelo | F1-score (media ± std) | AUC-ROC | Precisión | Recall | T. Inf. (ms) |
-|--------|----------------------|---------|-----------|--------|--------------|
-| Random Forest (HOG) | 0.61 ± 0.04 | 0.73 ± 0.03 | 0.62 | 0.58 | <1 |
-| ResNet-50 desde cero | 0.68 ± 0.04 | 0.79 ± 0.03 | 0.67 | 0.69 | 8 |
-| EfficientNet-B4 desde cero | 0.69 ± 0.04 | 0.80 ± 0.03 | 0.68 | 0.70 | 7 |
-| **ResNet-50 fine-tuned** | **0.78 ± 0.03** | **0.89 ± 0.02** | 0.78 | 0.79 | 8 |
-| **EfficientNet-B4 fine-tuned** | **0.80 ± 0.03** | **0.90 ± 0.02** | 0.79 | 0.80 | 7 |
-| U-Net+ResNet-34 fine-tuned | 0.75 ± 0.04 (IoU: 0.68) | 0.87 ± 0.02 | 0.74 | 0.76 | 14 |
+| Modelo | F1 (media ± std) | AUC-ROC | Precisión | Recall | IoU |
+|--------|-----------------|---------|-----------|--------|-----|
+| Random Forest (HOG) | `— pendiente` | — | — | — | — |
+| **ResNet-50 fine-tuned** | `— pendiente` | — | — | — | — |
+| **EfficientNet-B4 fine-tuned** | `— pendiente` | — | — | — | — |
+| U-Net + ResNet-34 | `— pendiente` | — | — | — | — |
+
+> Tabla se completa automáticamente al ejecutar `07_evaluation_comparison.ipynb`
 
 ### Ablation Study (ResNet-50 fine-tuned)
 
 | Configuración | F1 | Δ vs. completo |
 |---------------|-----|----------------|
-| Completo (referencia) | 0.78 | — |
-| Sin data augmentation | 0.71 | -0.07 |
-| Sin ponderación de clases | 0.68 | -0.10 |
-| Sin preentrenamiento ImageNet | 0.68 | -0.10 |
-| Solo canales RGB (3ch) | 0.71 | -0.07 |
-| Solo SAR + DEM (5ch) | 0.64 | -0.14 |
-| Umbral optimizado (best) | 0.80 | +0.02 |
+| Completo (referencia) | `pendiente` | — |
+| Sin data augmentation | — | — |
+| Sin ponderación de clases | — | — |
+| Sin preentrenamiento ImageNet | — | — |
+| Umbral optimizado (PR curve) | — | — |
 
 ---
 
@@ -314,7 +288,7 @@ Si usas este repositorio en tu investigación, por favor cita:
   author = {Montes, Ana Patricia},
   title  = {Landslide Detection with Deep Learning Fine-Tuning on Landslide4Sense},
   year   = {2026},
-  url    = {https://github.com/TU_USUARIO/landslide4sense-ml}
+  url    = {https://github.com/apmontesp/Landslides_-Applied-ML-Course}
 }
 ```
 
