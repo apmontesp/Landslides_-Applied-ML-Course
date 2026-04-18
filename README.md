@@ -107,21 +107,42 @@ Percentil 90:                    9.89%
 
 ## Arquitecturas Implementadas
 
-### ResNet-50 Fine-Tuned
+El proyecto sigue una escalera de complejidad deliberada: primero se establecen baselines clásicos con ingeniería de características manual, luego se evalúan arquitecturas CNN con fine-tuning, y finalmente segmentación pixel-level. Esta progresión permite aislar la contribución real de cada nivel de complejidad.
+
+### Baselines Clásicos (notebook 03)
+
+Los tres modelos clásicos usan un vector de características extraído de cada parche: **HOG** sobre falso color RGB (Sentinal-2 B4/B3/B2) + pendiente DEM + media NDVI + media SAR VH. Se aplica un Pipeline `SimpleImputer(median) → StandardScaler` antes de cada modelo sensible a escala.
+
+**Logistic Regression**
+- Pipeline con StandardScaler obligatorio
+- `C=1.0`, `class_weight='balanced'`, `max_iter=1000`
+- Sirve como baseline lineal de referencia
+
+**SVM kernel RBF**
+- Pipeline con StandardScaler obligatorio
+- `C=1.0`, `gamma='scale'`, `class_weight='balanced'`
+- Captura fronteras de decisión no lineales en el espacio de features
+
+**Random Forest (ensemble)**
+- No requiere escalado (invariante a monotonías)
+- `n_estimators=100`, `class_weight='balanced'`
+- Proporciona importancia de features interpretable
+
+### ResNet-50 Fine-Tuned (notebook 04)
 - Entrada adaptada: 14 canales (mean-initialization desde pesos ImageNet)
 - Protocolo: congelar backbone 5 épocas → descongelar completo
 - Loss: Weighted BCE (`pos_weight=0.70`)
 - Optimizer: AdamW (lr_head=1e-4, lr_backbone=1e-5)
 
-### EfficientNet-B4 Fine-Tuned
-- Misma estrategia de adaptación de canales
+### EfficientNet-B4 Fine-Tuned (notebook 05)
+- Misma estrategia de adaptación de canales que ResNet-50
 - 19M parámetros vs 25M de ResNet-50
 - Escalado compuesto: depth=1.8, width=1.4, resolution=1.3
 
-### U-Net + ResNet-34 (Segmentación)
+### U-Net + ResNet-34 — Segmentación pixel-level (notebook 06)
 - Encoder ResNet-34 preentrenado en ImageNet
 - Loss: Dice Loss + BCE (50/50)
-- Produce mapas de probabilidad 128×128 pixel-level
+- Produce mapas de probabilidad 128×128 — tarea fundamentalmente distinta a los modelos anteriores (clasificación de parche)
 - Implementado con `segmentation-models-pytorch`
 
 ---
