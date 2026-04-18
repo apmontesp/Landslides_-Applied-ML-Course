@@ -24,12 +24,17 @@
 - [Resultados](#resultados)
 - [Discusión y Transferibilidad a Colombia](#discusión-y-transferibilidad-a-colombia)
 - [Referencias](#referencias)
+  - Dataset · Arquitecturas CNN · Métodos clásicos · Teledetección · Herramientas · Contexto colombiano
 
 ---
 
 ## Descripción del Proyecto
 
-Los deslizamientos de tierra son uno de los fenómenos de remoción en masa más destructivos a nivel global [8]. Este proyecto implementa y compara modelos de aprendizaje automático clásico y arquitecturas de aprendizaje profundo para su detección automática usando el dataset multi-espectral **Landslide4Sense** [1]:
+Los deslizamientos de tierra son uno de los fenómenos de remoción en masa más destructivos a nivel global, con estimaciones de más de 4,000 fatalidades anuales y daños económicos superiores a 100 millones de dólares por evento [8][13]. Su ocurrencia está condicionada por factores intrínsecos —topografía, geología, hidrología, cobertura vegetal— y se ve agravada por detonantes externos como precipitaciones intensas, eventos sísmicos e intervención antrópica [13].
+
+En Colombia, la complejidad geológica, sumada a lluvias intensas, pendientes fuertes y el estado de meteorización de los materiales, configura un escenario de elevada susceptibilidad a movimientos en masa [13]. Estos fenómenos se generan principalmente en la región Andina, donde se asienta más del 70% de la población colombiana y se concentra la mayor parte de la infraestructura vial y productiva del país. Las implicaciones humanas y económicas presentan tendencias crecientes, fuertemente asociadas a eventos de lluvia y al Fenómeno de La Niña [14]. A pesar de los avances en metodologías de detección, su efectividad es limitada en el contexto montañoso y tropical del país, donde la alta nubosidad, la cobertura vegetal densa y la complejidad geomorfológica reducen el desempeño de los modelos entrenados en otros contextos [13][15].
+
+Este proyecto implementa y compara modelos de aprendizaje automático clásico y arquitecturas de aprendizaje profundo para la detección automática de deslizamientos sobre el dataset multi-espectral **Landslide4Sense** [1], con análisis explícito de las implicaciones de transferibilidad al contexto colombiano:
 
 | Modelo | Tipo | Preentrenamiento | Métrica objetivo |
 |--------|------|-----------------|-----------------|
@@ -313,13 +318,16 @@ El F1 de 0.445 refleja las condiciones experimentales (subconjunto de 2,000 mues
 
 ## Discusión y Transferibilidad a Colombia
 
-Los modelos entrenados sobre Landslide4Sense tienen limitaciones específicas para el contexto andino colombiano:
+La mayoría de los modelos publicados en la literatura han sido entrenados y validados en contextos geomorfológicos específicos —principalmente China, Italia y Grecia— con características topográficas, climáticas e hidrológicas completamente distintas a las del territorio colombiano. Implementar estos modelos sin reentrenamiento ni adaptación puede implicar una reducción de hasta el 25% en las métricas de desempeño [15]. Este proyecto, entrenado sobre Landslide4Sense, no es la excepción: sus resultados proveen una línea base robusta, pero presentan tres brechas de dominio que condicionan su transferibilidad directa al contexto andino:
 
-- **Nubosidad:** 60–80% de píxeles con nube en muchas zonas andinas → degrada bandas ópticas Sentinel-2; el SAR (Sentinel-1) mantiene cobertura pero pierde señal en pendientes pronunciadas
-- **Vegetación:** Bosques húmedos tropicales con mayor densidad de dosel que las regiones del dataset → la señal RedEdge (Ch12-13, más discriminativa según EDA) se satura antes
-- **Litología:** Volcánica-metamórfica en Andes colombianos, diferente de regiones loéssicas o calcáreas dominantes en el dataset original
+- **Nubosidad:** 60–80% de cobertura de nubes en zonas montañosas colombianas degrada sistemáticamente las bandas ópticas de Sentinel-2; el SAR (Sentinel-1) mantiene penetración atmosférica pero pierde sensibilidad en pendientes pronunciadas por efecto de layover [13]
+- **Vegetación:** Los bosques húmedos tropicales presentan mayor densidad y complejidad de dosel que las regiones del dataset; la señal RedEdge (Ch12-13), la más discriminativa según el EDA, se satura en coberturas densas, reduciendo su poder de separación entre clases [13]
+- **Litología:** El ambiente volcánico-metamórfico de los Andes colombianos difiere de las regiones loéssicas o calcáreas predominantes en el dataset original, afectando las firmas espectrales en bandas SWIR y SAR [13]
+- **Disponibilidad de inventarios:** La limitada cobertura del inventario nacional (SGC/SIMMA) en zonas de difícil acceso restringe la posibilidad de validación local y reentrenamiento con datos propios [13]
 
-**Trabajo futuro:** Fine-tuning local con datos de Antioquia (Abriaquí, Dabeiba, Salgar) usando CORAL domain adaptation para estimar y compensar la brecha de dominio espectral antes del transfer. La ocurrencia de deslizamientos asociados a eventos sísmicos y lluvias extremas en contextos similares ha sido documentada en [8].
+**Cuantificación de la brecha:** Wang y Brenning [15] demuestran que la transferencia de modelos entre contextos geomorfológicos sin adaptación de dominio puede producir degradaciones de F1 de hasta 25 puntos porcentuales. Aplicado al mejor resultado obtenido (RF F1=0.837), esto proyecta un desempeño de F1≈0.63 en datos colombianos sin reentrenamiento local, lo que subraya la necesidad de adaptación antes de cualquier despliegue operativo.
+
+**Trabajo futuro — integración UAV e IA local:** Los vehículos aéreos no tripulados (UAV) constituyen una herramienta versátil para la adquisición de información de alta resolución en entornos de difícil acceso, con capacidad de obtener ortomosaicos y modelos digitales de elevación a escala centimétrica [16]. La integración de datos UAV con algoritmos de inteligencia artificial calibrados para las condiciones locales representa la ruta más directa para superar las brechas identificadas. El trabajo futuro contempla: colecta de datos de campo en municipios de alta susceptibilidad de Antioquia (Abriaquí, Dabeiba, Salgar) mediante inspecciones UAV; construcción de un inventario georreferenciado con el Sistema de Información de Movimientos en Masa (SIMMA/SGC) [13]; y fine-tuning de los modelos sobre datos mixtos (Landslide4Sense + datos locales) mediante técnicas de domain adaptation (CORAL) para estimar y compensar la brecha de dominio espectral.
 
 ---
 
@@ -358,3 +366,13 @@ Los modelos entrenados sobre Landslide4Sense tienen limitaciones específicas pa
 [11] F. Pedregosa et al., "Scikit-learn: Machine Learning in Python," *J. Mach. Learn. Res.*, vol. 12, pp. 2825–2830, 2011.
 
 [12] P. Iakubovskii, "Segmentation Models PyTorch," GitHub, 2019. [Online]. Available: https://github.com/qubvel/segmentation_models.pytorch
+
+**Contexto colombiano y transferibilidad**
+
+[13] Servicio Geológico Colombiano, *Las amenazas por movimientos en masa de Colombia, una visión a escala 1:100.000*. Bogotá: SGC, 2017, doi: 10.32685/9789589952887.
+
+[14] J. Ayala-García and K. Ospino-Ramos, "Desastres naturales en Colombia: un análisis regional," *Documentos de Trabajo sobre Economía Regional y Urbana*, Banco de la República, 2019. [Online]. Available: https://www.banrep.gov.co
+
+[15] Z. Wang and A. Brenning, "Unsupervised active–transfer learning for automated landslide mapping," *Comput. Geosci.*, vol. 181, p. 105457, Dec. 2023, doi: 10.1016/j.cageo.2023.105457.
+
+[16] J. Sun, G. Yuan, L. Song, and H. Zhang, "Unmanned Aerial Vehicles (UAVs) in Landslide Investigation and Monitoring: A Review," *Drones*, vol. 8, no. 1, p. 30, Jan. 2024, doi: 10.3390/drones8010030.
