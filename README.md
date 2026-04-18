@@ -33,10 +33,12 @@ Los deslizamientos de tierra son uno de los fenómenos de remoción en masa más
 
 | Modelo | Tipo | Preentrenamiento | Métrica objetivo |
 |--------|------|-----------------|-----------------|
+| Logistic Regression (HOG) | Baseline lineal | — | F1-score |
+| SVM kernel RBF (HOG) | Baseline no lineal clásico | — | F1-score |
+| Random Forest (HOG) | Baseline ensemble | — | F1-score |
 | ResNet-50 | Clasificación de parche | ImageNet | F1-score |
 | EfficientNet-B4 | Clasificación de parche | ImageNet | F1-score / AUC-ROC |
 | U-Net + ResNet-34 | Segmentación pixel-level | ImageNet | IoU |
-| Random Forest (HOG) | Baseline clásico | — | F1-score |
 
 **Pregunta de investigación:** ¿En qué medida el fine-tuning de arquitecturas CNN sobre el dataset multi-espectral Landslide4Sense supera a los baselines clásicos y al entrenamiento desde cero, y qué implicaciones tiene para la transferibilidad a contextos geomorfológicos andinos colombianos?
 
@@ -219,7 +221,7 @@ Ejecuta los notebooks en orden — cada uno guarda sus resultados automáticamen
 | 00 | `00_setup_verification.ipynb` | Verificación del entorno | — |
 | 01 | `01_eda_analysis.ipynb` | Análisis exploratorio | figuras EDA |
 | 02 | `02_preprocessing.ipynb` | Preprocesamiento | — |
-| 03 | `03_baseline_rf.ipynb` | Baseline Random Forest | `results/random_forest/` |
+| 03 | `03_classical_baselines.ipynb` | Baselines clásicos: LR, SVM, RF | `results/classical_baselines/` |
 | 04 | `04_resnet50.ipynb` | ResNet-50 fine-tuning | `results/resnet50/` |
 | 05 | `05_efficientnet_b4.ipynb` | EfficientNet-B4 fine-tuning | `results/efficientnet_b4/` |
 | 06 | `06_unet_segmentation.ipynb` | U-Net segmentación | `results/unet_resnet34/` |
@@ -248,6 +250,8 @@ chmod +x scripts/run_all.sh && ./scripts/run_all.sh --data_root ./data
 
 | Modelo | F1 (media ± std) | AUC-ROC | Precisión | Recall | IoU |
 |--------|-----------------|---------|-----------|--------|-----|
+| Logistic Regression (HOG) | `— pendiente` | — | — | — | — |
+| SVM kernel RBF (HOG) | `— pendiente` | — | — | — | — |
 | Random Forest (HOG) | `— pendiente` | — | — | — | — |
 | **ResNet-50 fine-tuned** | `— pendiente` | — | — | — | — |
 | **EfficientNet-B4 fine-tuned** | `— pendiente` | — | — | — | — |
