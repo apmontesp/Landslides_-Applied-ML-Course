@@ -7,7 +7,7 @@
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/apmontesp/Landslides_-Applied-ML-Course/blob/main/notebooks/00_setup_verification.ipynb)
 
 > **Proyecto Final — Aprendizaje de Máquinas Aplicado a Inteligencia Artificial**  
-> Evaluación comparativa de modelos clásicos y arquitecturas CNN con fine-tuning para la detección automática de deslizamientos de tierra sobre imágenes multi-espectrales de 14 canales.  
+> Evaluación comparativa de modelos clásicos y arquitecturas CNN con fine-tuning para la detección automática de movimientos en masa sobre imágenes multi-espectrales de 14 canales.  
 > **Mejor resultado:** Random Forest HOG — F1=0.837 | ResNet-50 — F1=0.784 | U-Net segmentación — F1=0.445
 
 ---
@@ -30,7 +30,7 @@
 
 ## Descripción del Proyecto
 
-Los deslizamientos de tierra son uno de los fenómenos de remoción en masa más destructivos a nivel global, con estimaciones de más de 4,000 fatalidades anuales y daños económicos superiores a 100 millones de dólares por evento [8][13]. Su ocurrencia está condicionada por factores intrínsecos —topografía, geología, hidrología, cobertura vegetal— y se ve agravada por detonantes externos como precipitaciones intensas, eventos sísmicos e intervención antrópica [13].
+Los deslizamientos de laderas son uno de los fenómenos de remoción en masa más destructivos a nivel global, con estimaciones de más de 4,000 fatalidades anuales y daños económicos superiores a 100 millones de dólares por evento [8][13]. Su ocurrencia está condicionada por factores intrínsecos —topografía, geología, hidrología, cobertura vegetal— y se ve agravada por detonantes externos como precipitaciones intensas, eventos sísmicos e intervención antrópica [13].
 
 En Colombia, la complejidad geológica, sumada a lluvias intensas, pendientes fuertes y el estado de meteorización de los materiales, configura un escenario de elevada susceptibilidad a movimientos en masa [13]. Estos fenómenos se generan principalmente en la región Andina, donde se asienta más del 70% de la población colombiana y se concentra la mayor parte de la infraestructura vial y productiva del país. Las implicaciones humanas y económicas presentan tendencias crecientes, fuertemente asociadas a eventos de lluvia y al Fenómeno de La Niña [14]. A pesar de los avances en metodologías de detección, su efectividad es limitada en el contexto montañoso y tropical del país, donde la alta nubosidad, la cobertura vegetal densa y la complejidad geomorfológica reducen el desempeño de los modelos entrenados en otros contextos [13][15].
 
