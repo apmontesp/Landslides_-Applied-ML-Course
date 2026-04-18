@@ -1,4 +1,4 @@
-# 🌍 Landslide4Sense — Detección de Deslizamientos con Deep Learning
+#  Landslide4Sense — Detección de Deslizamientos con Deep Learning
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.1+-ee4c2c.svg)](https://pytorch.org/)
@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Tabla de Contenidos
+##  Tabla de Contenidos
 
 - [Descripción del Proyecto](#descripción-del-proyecto)
 - [Dataset](#dataset)
@@ -88,7 +88,7 @@ Positivos (deslizamiento):     2,231  (58.7%)
 Negativos (no-deslizamiento):  1,568  (41.3%)
 Ratio: 1 : 0.70  ← prácticamente balanceado
 ```
-> ⚠️ El balance observado difiere del 27%/73% documentado en la competición original. Se aplica `pos_weight=0.70` en la función de pérdida.
+>  El balance observado difiere del 27%/73% documentado en la competición original. Se aplica `pos_weight=0.70` en la función de pérdida.
 
 ### 2. Deslizamientos de Pequeña Escala (Small Object Detection)
 ```
@@ -275,13 +275,13 @@ chmod +x scripts/run_all.sh && ./scripts/run_all.sh --data_root ./data
 
 ## Resultados
 
-> ✅ **Experimentos completados** — Resultados reales sobre 2-Fold Cross-Validation (protocolo optimizado para Colab T4).
+>  **Experimentos completados** — Resultados reales sobre 2-Fold Cross-Validation (protocolo optimizado para Colab T4).
 
 ### Tabla Comparativa — Resultados Reales
 
 | Modelo | Tipo | F1 medio | AUC-ROC | Notas |
 |--------|------|----------|---------|-------|
-| **Random Forest (HOG)** | Clásico | **0.837** | 0.808 | 🏆 Mejor F1 global |
+| **Random Forest (HOG)** | Clásico | **0.837** | 0.808 |  Mejor F1 global |
 | SVM kernel RBF (HOG) | Clásico | 0.797 | 0.779 | |
 | Logistic Regression (HOG) | Clásico | 0.789 | 0.761 | |
 | ResNet-50 fine-tuned | Deep Learning | 0.784 | ~0.813 | AUC-PR: 0.810/0.816 por fold |
