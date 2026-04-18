@@ -24,7 +24,7 @@
 - [Resultados](#resultados)
 - [Discusión y Transferibilidad a Colombia](#discusión-y-transferibilidad-a-colombia)
 - [Referencias](#referencias)
-  - Dataset · Arquitecturas CNN · Métodos clásicos · Teledetección · Herramientas · Contexto colombiano
+ 
 
 ---
 
