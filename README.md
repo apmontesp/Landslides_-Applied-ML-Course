@@ -29,7 +29,7 @@
 
 ## Descripción del Proyecto
 
-Los deslizamientos de tierra son uno de los fenómenos de remoción en masa más destructivos a nivel global. Este proyecto implementa y compara tres arquitecturas de aprendizaje profundo para su detección automática usando el dataset multi-espectral **Landslide4Sense**:
+Los deslizamientos de tierra son uno de los fenómenos de remoción en masa más destructivos a nivel global [8]. Este proyecto implementa y compara modelos de aprendizaje automático clásico y arquitecturas de aprendizaje profundo para su detección automática usando el dataset multi-espectral **Landslide4Sense** [1]:
 
 | Modelo | Tipo | Preentrenamiento | Métrica objetivo |
 |--------|------|-----------------|-----------------|
@@ -46,7 +46,7 @@ Los deslizamientos de tierra son uno de los fenómenos de remoción en masa más
 
 ## Dataset
 
-**Landslide4Sense** — ISPRS Competition 2022
+**Landslide4Sense** — ISPRS Competition 2022 [1]
 
 | Partición | Imágenes | Máscaras | Descripción |
 |-----------|----------|----------|-------------|
@@ -58,10 +58,10 @@ Los deslizamientos de tierra son uno de los fenómenos de remoción en masa más
 
 | Canales | Fuente | Bandas |
 |---------|--------|--------|
-| 0–6 | Sentinel-2 | B2(Azul), B3(Verde), B4(Rojo), B8(NIR), B8A(NIR-A), B11(SWIR1), B12(SWIR2) |
+| 0–6 | Sentinel-2 [9] | B2(Azul), B3(Verde), B4(Rojo), B8(NIR), B8A(NIR-A), B11(SWIR1), B12(SWIR2) |
 | 7–8 | Sentinel-1 SAR | VV, VH |
 | 9–10 | ALOS PALSAR | DEM Elevación, Pendiente |
-| 11–13 | Sentinel-2 Red-Edge | B5, B6, B7 |
+| 11–13 | Sentinel-2 Red-Edge [9] | B5, B6, B7 |
 
 **Descarga:** [kaggle.com/datasets/landslide4sense/competition](https://www.kaggle.com/datasets/landslide4sense/competition)
 
@@ -110,39 +110,41 @@ El proyecto sigue una escalera de complejidad deliberada: primero se establecen 
 
 ### Baselines Clásicos (notebook 03)
 
-Los tres modelos clásicos usan un vector de características extraído de cada parche: **HOG** sobre falso color RGB (Sentinal-2 B4/B3/B2) + pendiente DEM + media NDVI + media SAR VH. Se aplica un Pipeline `SimpleImputer(median) → StandardScaler` antes de cada modelo sensible a escala.
+Los tres modelos clásicos usan un vector de características extraído de cada parche: **HOG** [5] sobre falso color RGB (Sentinel-2 B4/B3/B2) + pendiente DEM + media NDVI + media SAR VH. Se aplica un Pipeline `SimpleImputer(median) → StandardScaler` antes de cada modelo sensible a escala. Las implementaciones se realizan con scikit-learn [11].
 
 **Logistic Regression**
 - Pipeline con StandardScaler obligatorio
 - `C=1.0`, `class_weight='balanced'`, `max_iter=1000`
 - Sirve como baseline lineal de referencia
 
-**SVM kernel RBF**
+**SVM kernel RBF** [7]
 - Pipeline con StandardScaler obligatorio
 - `C=1.0`, `gamma='scale'`, `class_weight='balanced'`
 - Captura fronteras de decisión no lineales en el espacio de features
 
-**Random Forest (ensemble)**
+**Random Forest (ensemble)** [6]
 - No requiere escalado (invariante a monotonías)
 - `n_estimators=100`, `class_weight='balanced'`
 - Proporciona importancia de features interpretable
 
-### ResNet-50 Fine-Tuned (notebook 04)
+### ResNet-50 Fine-Tuned (notebook 04) [2]
 - Entrada adaptada: 14 canales (mean-initialization desde pesos ImageNet)
 - Protocolo: congelar backbone 5 épocas → descongelar completo
 - Loss: Weighted BCE (`pos_weight=0.70`)
 - Optimizer: AdamW (lr_head=1e-4, lr_backbone=1e-5)
+- Implementado en PyTorch [10]
 
-### EfficientNet-B4 Fine-Tuned (notebook 05)
+### EfficientNet-B4 Fine-Tuned (notebook 05) [3]
 - Misma estrategia de adaptación de canales que ResNet-50
 - 19M parámetros vs 25M de ResNet-50
 - Escalado compuesto: depth=1.8, width=1.4, resolution=1.3
+- Implementado en PyTorch [10]
 
-### U-Net + ResNet-34 — Segmentación pixel-level (notebook 06)
+### U-Net + ResNet-34 — Segmentación pixel-level (notebook 06) [4]
 - Encoder ResNet-34 preentrenado en ImageNet
 - Loss: Dice Loss + BCE (50/50)
 - Produce mapas de probabilidad 128×128 — tarea fundamentalmente distinta a los modelos anteriores (clasificación de parche)
-- Implementado con `segmentation-models-pytorch`
+- Implementado con `segmentation-models-pytorch` [12]
 
 ---
 
@@ -287,7 +289,7 @@ chmod +x scripts/run_all.sh && ./scripts/run_all.sh --data_root ./data
 
 **El Random Forest supera a los modelos CNN** en clasificación de parche (F1: 0.837 vs 0.784 ResNet-50). Este resultado, contra-intuitivo a priori, se explica por tres factores concurrentes:
 
-1. **Ingeniería de características efectiva** — HOG + Pendiente DEM + NDVI + SAR VH capturan las señales espectrales más discriminativas identificadas en el EDA (Ch12-13 RedEdge, Ch9 DEM). El Random Forest extrae estas relaciones directamente sin necesidad de aprender representaciones desde cero.
+1. **Ingeniería de características efectiva** — HOG [5] + Pendiente DEM + NDVI + SAR VH capturan las señales espectrales más discriminativas identificadas en el EDA (Ch12-13 RedEdge, Ch9 DEM). El Random Forest [6] extrae estas relaciones directamente sin necesidad de aprender representaciones desde cero.
 
 2. **Régimen de datos** — Con 1,500–2,000 muestras y solo 2 folds de validación, el CNN no tiene suficiente señal para superar el sesgo inductivo de features bien diseñadas. Los modelos de aprendizaje profundo tipicamente necesitan >10k muestras etiquetadas para superar a métodos clásicos en tareas de clasificación de parche.
 
@@ -317,7 +319,7 @@ Los modelos entrenados sobre Landslide4Sense tienen limitaciones específicas pa
 - **Vegetación:** Bosques húmedos tropicales con mayor densidad de dosel que las regiones del dataset → la señal RedEdge (Ch12-13, más discriminativa según EDA) se satura antes
 - **Litología:** Volcánica-metamórfica en Andes colombianos, diferente de regiones loéssicas o calcáreas dominantes en el dataset original
 
-**Trabajo futuro:** Fine-tuning local con datos de Antioquia (Abriaquí, Dabeiba, Salgar) usando CORAL domain adaptation para estimar y compensar la brecha de dominio espectral antes del transfer.
+**Trabajo futuro:** Fine-tuning local con datos de Antioquia (Abriaquí, Dabeiba, Salgar) usando CORAL domain adaptation para estimar y compensar la brecha de dominio espectral antes del transfer. La ocurrencia de deslizamientos asociados a eventos sísmicos y lluvias extremas en contextos similares ha sido documentada en [8].
 
 ---
 
