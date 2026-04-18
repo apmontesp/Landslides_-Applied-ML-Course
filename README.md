@@ -23,8 +23,7 @@
 - [Uso Paso a Paso](#uso-paso-a-paso)
 - [Resultados](#resultados)
 - [Discusión y Transferibilidad a Colombia](#discusión-y-transferibilidad-a-colombia)
-- [Citación](#citación)
-- [Licencia](#licencia)
+- [Referencias](#referencias)
 
 ---
 
@@ -322,22 +321,38 @@ Los modelos entrenados sobre Landslide4Sense tienen limitaciones específicas pa
 
 ---
 
-## Citación
+## Referencias
 
-Si usas este repositorio en tu investigación, por favor cita:
+**Dataset y competición**
 
-```bibtex
-@misc{montes2026landslide,
-  author = {Montes, Ana Patricia},
-  title  = {Landslide Detection with Deep Learning Fine-Tuning on Landslide4Sense},
-  year   = {2026},
-  url    = {https://github.com/apmontesp/Landslides_-Applied-ML-Course}
-}
-```
+[1] O. Ghorbanzadeh, H. Shahabi, A. Crivellari, S. Homayouni, T. Blaschke, and P. Ghamisi, "Landslide4Sense: Reference Benchmark Data and Deep Learning Models for Landslide Detection," *IEEE Trans. Geosci. Remote Sens.*, vol. 60, pp. 1–17, 2022, doi: 10.1109/TGRS.2022.3215209.
 
-**Dataset original:**
-```bibtex
-@article{ghorbanzadeh2022landslide4sense,
-  title   = {Landslide4Sense: Reference Benchmark Data and Deep Learning Models for Landslide Detection},
-  author  = {Ghorbanzadeh, Omid and others},
-  journal = {IEEE
+**Arquitecturas CNN**
+
+[2] K. He, X. Zhang, S. Ren, and J. Sun, "Deep Residual Learning for Image Recognition," in *Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR)*, Las Vegas, NV, USA, 2016, pp. 770–778.
+
+[3] M. Tan and Q. V. Le, "EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks," in *Proc. 36th Int. Conf. Mach. Learn. (ICML)*, Long Beach, CA, USA, 2019, pp. 6105–6114.
+
+[4] O. Ronneberger, P. Fischer, and T. Brox, "U-Net: Convolutional Networks for Biomedical Image Segmentation," in *Proc. Med. Image Comput. Comput.-Assisted Intervention (MICCAI)*, Munich, Germany, 2015, pp. 234–241.
+
+**Métodos clásicos y extracción de características**
+
+[5] N. Dalal and B. Triggs, "Histograms of Oriented Gradients for Human Detection," in *Proc. IEEE Conf. Comput. Vis. Pattern Recognit. (CVPR)*, San Diego, CA, USA, 2005, pp. 886–893.
+
+[6] L. Breiman, "Random Forests," *Mach. Learn.*, vol. 45, no. 1, pp. 5–32, 2001.
+
+[7] C. Cortes and V. Vapnik, "Support-Vector Networks," *Mach. Learn.*, vol. 20, no. 3, pp. 273–297, 1995.
+
+**Teledetección y deslizamientos**
+
+[8] H. Yamagishi and F. Yamazaki, "Landslides by the 2018 Hokkaido Iburi-Tobu Earthquake on September 6," *Landslides*, vol. 15, no. 12, pp. 2521–2524, 2018.
+
+[9] European Space Agency, "Sentinel-2 Level-2A Product Guide," Copernicus Data Space Ecosystem, 2023. [Online]. Available: https://dataspace.copernicus.eu
+
+**Herramientas y librerías**
+
+[10] A. Paszke et al., "PyTorch: An Imperative Style, High-Performance Deep Learning Library," in *Adv. Neural Inf. Process. Syst. (NeurIPS)*, Vancouver, Canada, 2019, vol. 32.
+
+[11] F. Pedregosa et al., "Scikit-learn: Machine Learning in Python," *J. Mach. Learn. Res.*, vol. 12, pp. 2825–2830, 2011.
+
+[12] P. Iakubovskii, "Segmentation Models PyTorch," GitHub, 2019. [Online]. Available: https://github.com/qubvel/segmentation_models.pytorch
