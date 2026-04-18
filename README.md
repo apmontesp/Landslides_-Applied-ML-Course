@@ -154,14 +154,14 @@ landslide4sense-ml/
 │   └── unet_resnet34.yaml
 │
 ├── notebooks/                       ← Jupyter Notebooks paso a paso
-│   ├── 00_setup_verification.ipynb  ← Setup y verificación del entorno
-│   ├── 01_eda_analysis.ipynb        ← EDA completo con datos reales
-│   ├── 02_preprocessing.ipynb       ← Preprocesamiento y augmentation
-│   ├── 03_baseline_rf.ipynb         ← Baseline Random Forest
-│   ├── 04_resnet50.ipynb            ← Fine-tuning ResNet-50
-│   ├── 05_efficientnet_b4.ipynb     ← Fine-tuning EfficientNet-B4
-│   ├── 06_unet_segmentation.ipynb   ← U-Net segmentación
-│   └── 07_evaluation_comparison.ipynb ← Comparativa final
+│   ├── 00_setup_verification.ipynb     ← Setup y verificación del entorno
+│   ├── 01_eda_analysis.ipynb           ← EDA completo con datos reales
+│   ├── 02_preprocessing.ipynb          ← Preprocesamiento: Z-score, StandardScaler, Pipeline, data leakage
+│   ├── 03_classical_baselines.ipynb    ← Baselines clásicos: LR → SVM → Random Forest
+│   ├── 04_resnet50.ipynb               ← Fine-tuning ResNet-50
+│   ├── 05_efficientnet_b4.ipynb        ← Fine-tuning EfficientNet-B4
+│   ├── 06_unet_segmentation.ipynb      ← U-Net segmentación pixel-level
+│   └── 07_evaluation_comparison.ipynb  ← Comparativa final todos los modelos
 │
 ├── scripts/                         ← Scripts standalone ejecutables
 │   ├── run_eda.py                   ← EDA completo desde CLI
@@ -175,8 +175,12 @@ landslide4sense-ml/
 │   ├── colombia_transfer.md         ← Transferibilidad a Colombia
 │   └── figures/                     ← Figuras del EDA
 │
-├── results/                         ← Resultados (gitignored, grandes)
-│   └── .gitkeep
+├── results/                         ← Resultados reales de entrenamiento (PNGs y JSONs en git; pesos .pt excluidos)
+│   ├── classical_baselines/         ← JSONs y figuras LR, SVM, Random Forest
+│   ├── resnet50/                    ← Métricas, historial y figuras ResNet-50
+│   ├── efficientnet_b4/             ← Métricas, historial y figuras EfficientNet-B4
+│   ├── unet_resnet34/               ← Métricas, predicciones y figuras U-Net
+│   └── comparison_*.png/csv/json   ← Comparativa final generada por notebook 07
 │
 └── tests/                           ← Tests unitarios
     ├── __init__.py
@@ -315,19 +319,4 @@ Si usas este repositorio en tu investigación, por favor cita:
 @article{ghorbanzadeh2022landslide4sense,
   title   = {Landslide4Sense: Reference Benchmark Data and Deep Learning Models for Landslide Detection},
   author  = {Ghorbanzadeh, Omid and others},
-  journal = {IEEE Transactions on Geoscience and Remote Sensing},
-  year    = {2022},
-  volume  = {60},
-  pages   = {1--17}
-}
-```
-
----
-
-## Licencia
-
-MIT License — ver [LICENSE](LICENSE) para detalles.
-
----
-
-*Proyecto desarrollado como entrega final del curso de Aprendizaje de Máquinas Aplicado a Inteligencia Artificial — 2026*
+  journal = {IEEE
