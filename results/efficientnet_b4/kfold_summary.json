@@ -1,0 +1,4 @@
+{
+  "model": "efficientnet_b4",
+  "mean_f1": 0.7554356812169312
+}

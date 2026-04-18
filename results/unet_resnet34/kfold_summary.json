@@ -1,0 +1,29 @@
+{
+  "model": "unet_resnet34",
+  "config": {
+    "n_folds": 2,
+    "epochs": 10,
+    "freeze_epochs": 2,
+    "batch_size": 16,
+    "lr_head": 0.0001,
+    "lr_backbone": 1e-05,
+    "pos_weight": 0.703,
+    "patience": 3,
+    "seed": 42,
+    "use_amp": true
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "best_f1": 0.43399908817529137,
+      "best_epoch": 7
+    },
+    {
+      "fold": 2,
+      "best_f1": 0.4545756491360485,
+      "best_epoch": 8
+    }
+  ],
+  "mean_f1": 0.4442873686556699,
+  "std_f1": 0.010288280480378553
+}

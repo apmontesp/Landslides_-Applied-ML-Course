@@ -1,0 +1,26 @@
+{
+  "model": "resnet50",
+  "config": {
+    "n_folds": 2,
+    "epochs": 3,
+    "freeze_epochs": 2,
+    "batch_size": 64,
+    "lr_head": 0.0001,
+    "lr_backbone": 1e-05,
+    "pos_weight": 0.703,
+    "seed": 42
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "best_f1": 0.7793608009241433,
+      "best_epoch": 1
+    },
+    {
+      "fold": 2,
+      "best_f1": 0.7886337096146361,
+      "best_epoch": 1
+    }
+  ],
+  "mean_f1": 0.7839972552693897
+}

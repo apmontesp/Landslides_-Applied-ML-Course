@@ -13,16 +13,19 @@ data/*.tar.gz
 *.hdf5
 
 # ── Resultados y checkpoints ─────────────────────────────────
-results/
-!results/.gitkeep
+# Pesos de modelos (muy grandes para git)
+results/**/*.pt
+results/**/*.pth
+results/**/*.ckpt
+# Caché de etiquetas (se regenera automáticamente)
+results/labels_cache.json
 checkpoints/
 runs/
 outputs/
 eda_outputs/
-*.pth
-*.pt
 *.ckpt
 *.pkl
+# Imágenes y JSONs de resultados SÍ van a git (docs del proyecto)
 
 # ── Python ───────────────────────────────────────────────────
 __pycache__/

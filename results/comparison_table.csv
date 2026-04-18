@@ -1,0 +1,7 @@
+Modelo,Tipo,F1 medio,Std,AUC-ROC,Precisión,Recall,IoU
+Logistic Regression,Clásico,0.7886,0.0191,0.7601,0.7971,0.7806,0.6513
+SVM (RBF),Clásico,0.7974,0.0298,0.7822,0.8193,0.7777,0.6641
+Random Forest,Clásico,0.8368,0.0078,0.8098,0.7439,0.9569,0.7195
+ResNet-50,Deep Learning,0.784,0.0046,—,—,—,—
+EfficientNet-B4,Deep Learning,0.7554,0.0,—,—,—,—
+U-Net ResNet-34,Deep Learning,0.4443,0.0103,—,—,—,—
