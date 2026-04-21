@@ -1,7 +1,6 @@
 # Metodología — Detección de Deslizamientos con Deep Learning
 
 **Proyecto:** Landslide4Sense — Evaluación Comparativa de Arquitecturas CNN  
-**Autor:** Ana Patricia Montes  
 **Fecha:** 2026
 
 ---
