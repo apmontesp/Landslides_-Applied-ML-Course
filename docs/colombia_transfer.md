@@ -1,7 +1,6 @@
 # Transferibilidad a Colombia — Contexto Andino
 
 **Proyecto:** Landslide4Sense — Análisis de Dominio  
-**Autor:** Ana Patricia Montes  
 **Fecha:** 2026
 
 ---
