@@ -385,5 +385,4 @@ La mayoría de los modelos publicados han sido entrenados en contextos geomorfol
 
 ---
 
-*Proyecto desarrollado en el marco del programa de Aprendizaje de Máquinas Aplicado a Inteligencia Artificial ![Uploading imagen.png…]()
-la Universidad EAFIT · Medellín, Colombia · 2025.*
+*Proyecto desarrollado en el marco del programa de Aprendizaje de Máquinas Aplicado a Inteligencia Artificial de la Universidad EAFIT · Medellín, Colombia · 2026.*
