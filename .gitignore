@@ -100,13 +100,6 @@ kaggle.json
 tmp/
 temp/
 
-# ── Archivos locales (NO van a GitHub) ───────────────────────
-# Herramienta de desarrollo local (Cowork/Claude)
-CLAUDE.md
-
-# Artículo académico (documento Word local)
-Articulo_Final_LandslideDetection_ML.docx
-*.docx
 
 # Figuras sueltas generadas en la raíz (ver eda_outputs/ y docs/figures/)
 fig1_sample_images.png
@@ -125,3 +118,4 @@ notebooks/Landslide4Sense_EDA_Pipeline_legacy.ipynb
 TrainData/
 ValidData/
 TestData/
+
