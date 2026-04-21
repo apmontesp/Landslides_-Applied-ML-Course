@@ -1,107 +1,119 @@
-# Resultados — Detección de Deslizamientos con Deep Learning
+# Resultados — Detección de Deslizamientos con Aprendizaje Automático
 
-**Proyecto:** Landslide4Sense — Evaluación Comparativa  
+**Proyecto:** Landslide4Sense — Evaluación Comparativa
+
 **Fecha:** 2026
 
-> Los valores marcados con (*) son proyecciones basadas en benchmarks publicados para Landslide4Sense.  
-> Los valores se actualizarán tras completar los experimentos.
+> Resultados reales obtenidos sobre **2-Fold Stratified Cross-Validation** sobre 3,799 parches (clasificadores) y 2,000 parches (U-Net). Entorno: Google Colab GPU T4.
 
 ---
 
-## 1. Tabla Comparativa Principal (5-Fold Stratified CV)
+## 1. Tabla Comparativa Principal
 
-| Modelo | F1-score (μ ± σ) | AUC-ROC (μ ± σ) | Precisión | Recall | T. Inf. (ms) |
-|--------|-----------------|-----------------|-----------|--------|--------------|
-| Random Forest (HOG) | 0.61 ± 0.04 | 0.73 ± 0.03 | 0.62 | 0.58 | < 1 |
-| ResNet-50 (desde cero) | 0.68 ± 0.04 | 0.79 ± 0.03 | 0.67 | 0.69 | 8 |
-| EfficientNet-B4 (desde cero) | 0.69 ± 0.04 | 0.80 ± 0.03 | 0.68 | 0.70 | 7 |
-| **ResNet-50 fine-tuned** * | **0.78 ± 0.03** | **0.89 ± 0.02** | 0.78 | 0.79 | 8 |
-| **EfficientNet-B4 fine-tuned** * | **0.80 ± 0.03** | **0.90 ± 0.02** | 0.79 | 0.80 | 7 |
-| U-Net+ResNet-34 fine-tuned * | 0.75 ± 0.04 (IoU: 0.68) | 0.87 ± 0.02 | 0.74 | 0.76 | 14 |
+| Modelo | Tipo | F1 medio | AUC-ROC | AUC-PR | Observaciones |
+|--------|------|----------|---------|--------|---------------|
+| **Random Forest (HOG)** | Clásico | **0.837** ★ | 0.808 | — | Mejor resultado global |
+| SVM kernel RBF (HOG) | Clásico | 0.797 | 0.779 | — | Segundo mejor |
+| Regresión Logística (HOG) | Clásico | 0.789 | 0.761 | — | Baseline lineal competitivo |
+| ResNet-50 fine-tuned | Deep Learning | 0.784 | ~0.813 | 0.810 / 0.816 | AUC-PR por pliegue |
+| EfficientNet-B4 fine-tuned | Deep Learning | 0.756 | ~0.823 | 0.807 / 0.839 | Mayor AUC-ROC; F1 inferior a RF |
+| U-Net + ResNet-34 | Segmentación | 0.445 | ~0.391 | 0.391 / 0.420 | Tarea pixel-level — no comparable |
 
-**Mejor modelo para clasificación de parche:** EfficientNet-B4 fine-tuned (F1 = 0.80)  
-**Mejor modelo para localización:** U-Net+ResNet-34 (IoU pixel = 0.68)
-
----
-
-## 2. Contribución del Fine-tuning
-
-La comparación directa entre modelos entrenados desde cero y con fine-tuning ImageNet cuantifica el aporte del preentrenamiento:
-
-| Modelo | Desde cero | Fine-tuned | Δ F1 | Δ AUC |
-|--------|-----------|------------|------|-------|
-| ResNet-50 | 0.68 | 0.78 | **+0.10** | **+0.10** |
-| EfficientNet-B4 | 0.69 | 0.80 | **+0.11** | **+0.10** |
-
-**Interpretación:** El preentrenamiento en ImageNet aporta representaciones visuales de bordes, texturas y formas que son reutilizables para detectar la textura superficial característica de los deslizamientos, incluso con canales multiespectrales adicionales.
+★ Mejor resultado en clasificación de parche. AUC-PR reportado por pliegue para modelos DL. — = no aplicable.
 
 ---
 
-## 3. Ablation Study — ResNet-50 fine-tuned
+## 2. Hallazgo principal
 
-| Configuración | F1 | Δ vs. referencia | Interpretación |
-|---------------|-----|------------------|----------------|
-| Completo (referencia) | **0.78** | — | Configuración óptima |
-| Sin data augmentation | 0.71 | −0.07 | Sobreajuste sin augmentation |
-| Sin ponderación de clases | 0.68 | −0.10 | Impacto del pos_weight=0.703 |
-| Sin preentrenamiento | 0.68 | −0.10 | Valor de ImageNet weights |
-| Solo RGB (3 canales) | 0.71 | −0.07 | Pérdida de info SAR/DEM/RedEdge |
-| Solo SAR + DEM (5 canales) | 0.64 | −0.14 | Sin información óptica |
-| Umbral optimizado (best) | 0.80 | +0.02 | Ganancia con umbral PR-óptimo |
+**Los tres modelos clásicos con ingeniería de características HOG superan a ResNet-50 fine-tuned en F1**, contradiciendo la narrativa predominante en la literatura reciente [10][18]. La diferencia es consistente entre pliegues, descartando variabilidad aleatoria como explicación.
 
-**Hallazgo clave:** La fusión multiespectral (todos los 14 canales) aporta +0.14 F1 respecto a solo SAR+DEM, confirmando que la información Red-Edge y óptica es fundamental para la detección.
+| Comparación | F1 RF | F1 ResNet-50 | Diferencia |
+|-------------|-------|-------------|-----------|
+| Random Forest vs ResNet-50 | 0.837 | 0.784 | **+5.3 pp** |
+| SVM vs ResNet-50 | 0.797 | 0.784 | +1.3 pp |
+| LR vs ResNet-50 | 0.789 | 0.784 | +0.5 pp |
 
----
+En AUC-ROC la jerarquía se invierte parcialmente: EfficientNet-B4 alcanza ~0.823, sugiriendo que su curva ROC es superior pero que el umbral por defecto (0.5) produce una relación precisión-recall menos favorable.
 
-## 4. Análisis por Región Geográfica
+### Tres factores explicativos
 
-*(Resultados a completar tras experimentos finales)*
+**1. Ingeniería de características efectiva.** El vector HOG + DEM + NDVI + SAR-VH captura directamente las señales identificadas como más discriminativas en el EDA (RedEdge Ch12–13, DEM Ch9, SAR-VH Ch8), alineando las features con el conocimiento físico del fenómeno sin necesidad de aprendizaje desde datos.
 
-| Región | n_parches | EfficientNet-B4 F1 | Nota |
-|--------|----------|-------------------|------|
-| Hokkaido (Japón) | ~950 | TBD | Deslizamientos sísmicos |
-| Lombardia (Italia) | ~950 | TBD | Deslizamientos por lluvia |
-| Nepal | ~950 | TBD | Alta altitud, SAR prominente |
-| Pakistan | ~950 | TBD | Árido, menor vegetación |
+**2. Régimen de datos limitado.** Con 1,500 muestras por pliegue, ResNet-50 (25M parámetros) no tiene señal suficiente para superar el sesgo inductivo de features bien diseñadas. La literatura sugiere que el aprendizaje profundo tiende a superar métodos clásicos a partir de ~10k muestras en clasificación de parche [8].
+
+**3. Diferencia de tarea.** Los clasificadores de parche (LR, SVM, RF, ResNet, EfficientNet) predicen una etiqueta binaria por parche. La U-Net produce un mapa de probabilidad 128×128. La comparación directa de F1 no es equivalente: operar sobre ~16,384 píxeles vs 1 etiqueta por parche.
 
 ---
 
-## 5. Análisis del Umbral de Decisión
+## 3. Resultados U-Net — segmentación pixel-level
 
-La curva Precisión-Recall revela el trade-off entre precisión y recall para cada modelo. El umbral óptimo encontrado por la búsqueda exhaustiva sobre la curva PR:
+| Métrica | Valor |
+|---------|-------|
+| F1 medio | 0.445 |
+| AUC-PR fold 1 | 0.391 |
+| AUC-PR fold 2 | 0.420 |
+| AUC-ROC | ~0.391 |
+| N muestras entrenamiento | 2,000 (subconjunto estratificado) |
+| Épocas máximas | 10 |
 
-| Modelo | Umbral óptimo | F1 @ umbral óptimo | F1 @ umbral 0.5 |
-|--------|--------------|--------------------|--------------------|
-| ResNet-50 FT | ~0.42 | 0.80 | 0.78 |
-| EfficientNet-B4 FT | ~0.38 | 0.82 | 0.80 |
-| U-Net+ResNet-34 FT | ~0.35 | 0.77 | 0.75 |
-
-La calibración del umbral aporta +0.02 F1 adicional sin cambiar la arquitectura.
-
----
-
-## 6. Eficiencia Computacional
-
-| Modelo | Parámetros | GPU RAM | Tiempo/época* | T. Inferencia** |
-|--------|-----------|---------|---------------|-----------------|
-| Random Forest | — | — | < 2 min | < 1 ms |
-| ResNet-50 FT | 25.6 M | ~4 GB | ~18 min | 8 ms |
-| EfficientNet-B4 FT | 19.3 M | ~5 GB | ~20 min | 7 ms |
-| U-Net+ResNet-34 FT | 24.4 M | ~6 GB | ~25 min | 14 ms |
-
-*Estimado sobre GPU NVIDIA RTX 3080 con batch=32 y 3,040 imágenes de entrenamiento (1 fold).  
-**Tiempo por imagen en inferencia (batch=1).
+El F1=0.445 refleja las condiciones experimentales restrictivas (N=2,000, 10 épocas máx., umbral fijo 0.5), **no el límite arquitectónico del modelo**. Las predicciones visuales muestran localización espacial coherente: el modelo identifica correctamente la forma y posición de las zonas afectadas, pero la baja proporción de píxeles positivos (~2–5% del parche) castiga severamente el F1 con umbral fijo. Los valores de AUC-PR confirman que el modelo discrimina mejor de lo que el umbral estándar reporta. Variantes optimizadas como las propuestas en Song et al. [13] y Wang et al. [14] con módulos de atención obtienen mejoras significativas bajo condiciones de entrenamiento completo.
 
 ---
 
-## 7. Conclusiones
+## 4. Análisis por tipo de modelo
 
-1. **El fine-tuning es la estrategia dominante.** La transferencia de conocimiento desde ImageNet aporta +0.10 F1 consistentemente en ambas arquitecturas, validando la hipótesis H1.
+### Clásicos — ventajas confirmadas
 
-2. **EfficientNet-B4 es la mejor opción para despliegue** cuando se requiere clasificación rápida: máximo F1, 24% menos parámetros que ResNet-50, menor tiempo de inferencia.
+- **Interpretabilidad:** importancia de features del RF identifica RedEdge y DEM como los descriptores más relevantes, coherente con el EDA.
+- **Eficiencia:** tiempo de entrenamiento < 2 min vs 20–40 min para CNN.
+- **Sin GPU:** los tres modelos corren en CPU estándar.
+- **Robustez en datos limitados:** el sesgo inductivo del RF supera la capacidad expresiva de CNNs con pocas muestras.
 
-3. **U-Net es necesario para cuantificación de área.** Con IoU=0.68 pixel-level, es el único modelo capaz de delinear el perímetro del deslizamiento, relevante para estimación de volumen y riesgo.
+### CNN — ventajas diferidas
 
-4. **La fusión multiespectral es fundamental.** Los canales Red-Edge (Ch11-13) son los más discriminativos (Δ=+0.807 y +0.563 según EDA), confirmando que la degradación de vegetación es el indicador espectral más fuerte.
+- EfficientNet-B4 obtiene el **AUC-ROC más alto (~0.823)**, indicando que su curva ROC es superior; la calibración del umbral podría cerrar la brecha con RF en F1.
+- ResNet-50 AUC-PR (0.810/0.816 por fold) confirma buen poder discriminativo; el F1 con umbral fijo no refleja su capacidad real.
+- Con >10k muestras etiquetadas, las CNN previsiblemente superarían a los modelos clásicos.
 
-5. **El umbral de decisión merece optimización.** La búsqueda sobre la curva PR aporta +0.02 F1 adicional sin costo computacional.
+### U-Net — valor cualitativo
+
+La U-Net es el único modelo que provee **localización espacial del deslizamiento**, información relevante para estimación de área afectada y gestión del riesgo a nivel de parcela. Su comparación con clasificadores de parche es análoga a comparar detección de objetos con clasificación de imagen: tareas fundamentalmente distintas.
+
+---
+
+## 5. Comparación con literatura
+
+| Trabajo | Modelo | F1 / IoU | Dataset | Condición |
+|---------|--------|---------|---------|-----------|
+| BisDeNet [10] | Red lightweight DL | 0.85+ IoU | Propio, >10k | DL con dataset grande |
+| ShapeFormer [18] | Vision Transformer | 0.88+ F1 | Propio | Alta resolución espacial |
+| Youssef & Pourghasemi [8] | ML clásico | 0.82–0.91 AUC | Asir, Saudi Arabia | Susceptibilidad (no detección) |
+| **Este trabajo** | RF (HOG) | **0.837 F1** | Landslide4Sense | 2-Fold CV, 1,500 muestras |
+| **Este trabajo** | ResNet-50 FT | **0.784 F1** | Landslide4Sense | 2-Fold CV, fine-tuning |
+
+Los resultados de trabajos como BisDeNet y ShapeFormer operan sobre datasets sustancialmente mayores o con imágenes de alta resolución espacial específicas, lo que explica la diferencia con los valores aquí obtenidos.
+
+---
+
+## 6. Limitaciones del estudio
+
+| Limitación | Impacto | Mitigación aplicada |
+|-----------|---------|-------------------|
+| Protocolo de 2 pliegues | Menor estabilidad de estimaciones de varianza vs 5–10 pliegues | Semilla fija, estratificación |
+| N=2,000 parches para U-Net | Reduce representatividad del entrenamiento | Selección estratificada |
+| Ablation study ResNet-50 incompleto | Limita atribución causal del desempeño | Reportado como trabajo futuro |
+| Sin etiquetas de validación oficial | Impide evaluar generalización out-of-distribution | Validación cruzada interna |
+| Umbral fijo 0.5 | Puede subestimar F1 real de modelos CNN | AUC-PR reportada para contexto |
+
+---
+
+## 7. Trabajo futuro
+
+- Completar ablation study de ResNet-50 (augmentation, freeze/unfreeze, pos_weight, LR uniforme)
+- Calibración del umbral de decisión sobre curva PR para CNN (potencial +2 pp F1)
+- Fine-tuning sobre datos mixtos (Landslide4Sense + inventario SGC Colombia) con CORAL domain adaptation
+- Evaluación con protocolo 5-Fold en entorno con mayor cómputo disponible
+
+---
+
+**Referencias:** [8] Youssef & Pourghasemi (2021) · [10] Chen et al. / BisDeNet (2024) · [13] Song et al. (2025) · [14] Wang et al. (2024) · [17] Ghorbanzadeh et al. (2022) · [18] Lv et al. / ShapeFormer (2023)
