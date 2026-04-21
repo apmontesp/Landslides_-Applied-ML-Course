@@ -27,12 +27,7 @@
 - [Resultados](#resultados)
 - [Discusión y Transferibilidad a Colombia](#discusión-y-transferibilidad-a-colombia)
 - [Referencias](#referencias)
-<<<<<<< HEAD
-=======
- 
->>>>>>> a43426ec6d565edbb880cc4ea7c1130cda1342ae
 
----
 
 ## Descripción del Proyecto
 
