@@ -1,6 +1,7 @@
 # Transferibilidad a Colombia — Contexto Andino
 
 **Proyecto:** Landslide4Sense — Análisis de Brechas de Dominio
+
 **Fecha:** 2026
 
 ---
