@@ -1,29 +1,29 @@
-# Metodología — Detección de Deslizamientos con Deep Learning
+# Metodología — Detección de Deslizamientos con Aprendizaje Automático
 
-**Proyecto:** Landslide4Sense — Evaluación Comparativa de Arquitecturas CNN  
-**Fecha:** 2026
+**Proyecto:** Landslide4Sense — Evaluación Comparativa de Modelos Clásicos y CNN
+**Fecha:** 2025
 
 ---
 
 ## 1. Diseño Experimental
 
-El experimento sigue un protocolo de **5-Fold Stratified Cross-Validation** sobre las 3,799 imágenes de TrainData, con estratificación por etiqueta de parche (presencia/ausencia de deslizamiento). Se usan 4 folds para entrenamiento y 1 para validación, rotando el fold de validación en cada iteración. Las métricas reportadas son la media ± desviación estándar sobre los 5 folds.
+El experimento sigue un protocolo de **2-Fold Stratified Cross-Validation** sobre las 3,799 imágenes de TrainData, con estratificación por etiqueta de parche (presencia/ausencia de deslizamiento). Se utilizan 2 pliegues en lugar de los 5 convencionales por restricciones de tiempo de cómputo en el entorno Google Colab con GPU T4, que limita el número de entrenamientos completos de modelos CNN. La semilla aleatoria fija `random_state=42` garantiza reproducibilidad en todos los modelos.
 
 ### Pregunta de investigación
 
-> ¿En qué medida el fine-tuning de arquitecturas CNN sobre el dataset multi-espectral Landslide4Sense supera a los baselines clásicos y al entrenamiento desde cero, y qué implicaciones tiene para la transferibilidad a contextos geomorfológicos andinos colombianos?
+> **¿En qué medida el fine-tuning de arquitecturas de Redes Neuronales Convolucionales sobre el dataset Landslide4Sense supera a los modelos clásicos con ingeniería de características HOG en términos de F1-score y AUC-ROC, bajo validación cruzada estratificada?**
 
-### Hipótesis
+### Hipótesis de trabajo
 
-1. El fine-tuning supera al entrenamiento desde cero en al menos 0.08 puntos de F1.
-2. La fusión de canales SAR y ópticos mejora la detección respecto a solo RGB.
-3. U-Net produce mejores mapas de probabilidad pixel-level que las redes de clasificación.
+1. Los modelos CNN con fine-tuning superan a los baselines clásicos con HOG en F1-score cuando el volumen de datos es suficiente.
+2. La fusión de canales SAR, DEM y Red-Edge mejora la detección respecto al uso exclusivo de canales ópticos.
+3. U-Net provee información espacial adicional (localización del deslizamiento) no disponible en clasificadores de parche.
 
 ---
 
 ## 2. Dataset
 
-**Landslide4Sense** (ISPRS 2022): parches de 128×128 píxeles con 14 canales espectrales capturados de múltiples sensores sobre 4 regiones geográficas (Hokkaido, Lombardia, Nepal, Pakistan).
+**Landslide4Sense** (ISPRS 2022 [17]): parches de 128×128 píxeles con 14 canales espectrales capturados de múltiples sensores sobre regiones de Asia, Europa y América del Sur.
 
 ### Canales de entrada
 
@@ -36,138 +36,152 @@ El experimento sigue un protocolo de **5-Fold Stratified Cross-Validation** sobr
 
 ### Hallazgos EDA que impactan el diseño
 
-- **Balance de clases real:** 58.7% positivos / 41.3% negativos → `pos_weight = 0.703`
-- **Small object detection:** área mediana = 2.04% del parche → justifica Dice Loss y U-Net
-- **Canales más discriminativos:** RedEdge3 (Δ=+0.807), RedEdge2 (Δ=+0.563), DEM (Δ=+0.195)
+- **Balance de clases real:** 2,231 positivos (58.7%) / 1,568 negativos (41.3%) → `pos_weight = 0.70`
+- **Small object detection:** área mediana = 2.04% del parche → justifica Dice Loss y segmentación pixel-level
+- **Canales más discriminativos:** RedEdge3 (Δ=+0.807), RedEdge2 (Δ=+0.563), DEM (Δ=+0.195), SAR-VH (Δ=+0.188)
 
 ---
 
-## 3. Preprocesamiento
+## 3. Preprocesamiento y protocolo de validación
 
-### Normalización
-
-Normalización **Z-score por canal** sobre los 14 canales de forma independiente:
+Todo el preprocesamiento se aplica **dentro de cada pliegue** mediante un Pipeline de scikit-learn para garantizar ausencia de data leakage:
 
 ```
-patch_norm[c] = (patch[c] - μ[c]) / (σ[c] + ε)
+SimpleImputer(strategy='median') → StandardScaler
 ```
 
-donde μ[c] y σ[c] se estiman sobre una muestra representativa de TrainData.
-
-### Data Augmentation
-
-Aplicada **solo en entrenamiento**, de forma consistente entre imagen y máscara:
-
-| Transformación | Probabilidad | Nota |
-|---------------|-------------|------|
-| Flip horizontal | 0.50 | Equivariante a orientación |
-| Flip vertical | 0.50 | |
-| Rotación 90°/180°/270° | 0.50 | k aleatorio en {1,2,3} |
-| Perturbación de brillo | 0.30 | Solo canales ópticos 0–6, ×U[0.8,1.2] |
-| Ruido gaussiano | 0.20 | σ=0.02, todos los canales |
+El Pipeline se ajusta únicamente sobre el conjunto de entrenamiento del pliegue y se aplica al conjunto de validación sin reajuste. Los conjuntos de validación (245 parches) y prueba (800 parches) del dataset oficial no tienen etiquetas disponibles públicamente, por lo que toda la evaluación se realiza sobre el conjunto de entrenamiento mediante validación cruzada.
 
 ---
 
-## 4. Adaptación a 14 Canales (Mean-Initialization)
+## 4. Ingeniería de características — Modelos clásicos
 
-Los pesos de la primera capa convolucional de ImageNet (3 canales) se adaptan a 14 canales mediante **replicación cíclica con escalado**:
+Los tres modelos clásicos operan sobre un vector de características extraído de cada parche con `N_SAMPLES=1,500` parches seleccionados aleatoriamente (restricción de memoria en extracción HOG):
+
+| Componente | Descripción | Dim. |
+|-----------|-------------|------|
+| HOG | orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2) sobre RGB (B4-B3-B2) | 1,764 |
+| Pendiente DEM | Media del canal 10 | 1 |
+| NDVI | Media de (B8−B4)/(B8+B4) | 1 |
+| SAR-VH | Media del canal 8 | 1 |
+
+**Vector total:** 1,767 elementos por parche. Alineado con los canales más discriminativos identificados en el EDA.
+
+---
+
+## 5. Modelos clásicos (notebook 03)
+
+### Regresión Logística (LR)
 
 ```python
-new_w[:, :14, :, :] = old_w.repeat(1, 5, 1, 1)[:, :14, :, :] * (3/14)
+Pipeline([
+    ('scaler', StandardScaler()),
+    ('clf', LogisticRegression(C=1.0, class_weight='balanced', max_iter=1000))
+])
 ```
 
-Esta estrategia, documentada como superior a la inicialización aleatoria en dominios multiespectrales, preserva la norma de activación esperada del feature map de salida.
+Baseline lineal de referencia. Establece el límite inferior esperable para métodos más complejos.
+
+### SVM kernel RBF
+
+```python
+Pipeline([
+    ('scaler', StandardScaler()),
+    ('clf', SVC(kernel='rbf', C=1.0, gamma='scale', class_weight='balanced', probability=True))
+])
+```
+
+Captura fronteras de decisión no lineales sin requerir aprendizaje de representaciones desde datos. StandardScaler obligatorio por sensibilidad a la escala.
+
+### Random Forest
+
+```python
+RandomForestClassifier(
+    n_estimators=100,
+    class_weight='balanced',
+    n_jobs=-1,
+    random_state=42
+)
+```
+
+No requiere escalado (invariante a transformaciones monótonas). Proporciona importancia de features interpretable. Ampliamente utilizado en tareas de susceptibilidad y detección de deslizamientos [8][9].
 
 ---
 
-## 5. Protocolo de Fine-Tuning
+## 6. Modelos de aprendizaje profundo — Clasificación de parche (notebooks 04–05)
 
-### Fase 1 — Adaptación (épocas 1–5)
+### Adaptación a 14 canales (Mean-Initialization)
 
-- Backbone preentrenado **congelado** (sin gradientes)
-- Solo la cabeza de clasificación se actualiza
-- Objetivo: adaptar la cabeza al espacio de features 14-canal
+La primera capa convolucional se reemplaza por una nueva de 14 canales de entrada, inicializada promediando los pesos ImageNet de los 3 canales originales y replicando el resultado. Esto preserva el conocimiento aprendido para extracción de bordes y texturas. Trabajos recientes validan esta estrategia para detección multiespectral [11][12].
 
-### Fase 2 — Fine-Tuning completo (épocas 6–N)
+### Protocolo de congelación progresiva
 
-- Backbone **descongelado** completamente
-- **Learning rate diferencial:**
-  - Cabeza: `lr_head = 1e-4`
-  - Backbone: `lr_backbone = 1e-5` (10× menor)
-- Scheduler: `CosineAnnealingLR(T_max=50, η_min=1e-7)`
+- **Fase 1:** Backbone congelado, solo se entrena la cabeza de clasificación (`lr_head=1e-4`)
+- **Fase 2:** Backbone descongelado con LR diferencial más bajo (`lr_backbone=1e-5`)
 
 ### Hiperparámetros comunes
 
 | Parámetro | Valor |
 |-----------|-------|
 | Optimizer | AdamW |
-| Weight decay | 1e-4 |
-| Épocas máximas | 50 (ResNet, EfficientNet) / 60 (U-Net) |
-| Patience (early stopping) | 15 épocas |
-| Métrica monitoreada | val_F1 (clasificadores) / val_IoU (U-Net) |
+| Scheduler | OneCycleLR |
+| Loss | Weighted BCE (`pos_weight=0.70`) |
+| Épocas máximas | 20 por pliegue |
 | Semilla | 42 |
+
+### ResNet-50
+
+25M parámetros. Conexiones residuales para gradientes estables en redes profundas.
+
+### EfficientNet-B4
+
+19M parámetros. Escalado compuesto: depth=1.8, width=1.4, resolution=1.3.
 
 ---
 
-## 6. Funciones de Pérdida
+## 7. U-Net — Segmentación pixel-level (notebook 06)
 
-### Clasificadores (ResNet-50, EfficientNet-B4)
-
-**Weighted Binary Cross-Entropy:**
+Encoder ResNet-34 preentrenado en ImageNet via `segmentation-models-pytorch`. Opera sobre un subconjunto estratificado de `N_SUBSET=2,000` parches por restricciones computacionales del entorno Colab. Variantes optimizadas con módulos de atención y doble canal demuestran mejoras adicionales en este tipo de tarea [13][14].
 
 ```
-L_BCE = -(w₁·y·log(ŷ) + (1−y)·log(1−ŷ))
-```
-
-con `w₁ = pos_weight = 0.703 = n_neg / n_pos`.
-
-### Segmentación (U-Net + ResNet-34)
-
-**Dice + BCE combinadas (50/50):**
-
-```
-L = 0.5 · L_BCE + 0.5 · L_Dice
-
-L_Dice = 1 - (2·|P∩T| + ε) / (|P| + |T| + ε)
+Loss = 0.5 × DiceLoss + 0.5 × BCE
 ```
 
 La componente Dice es crítica para deslizamientos de pequeña escala (área mediana 2.04%), ya que no colapsa ante el desbalance espacial extremo dentro del parche.
 
+| Parámetro | Valor |
+|-----------|-------|
+| batch_size | 16 |
+| lr | 1e-3 |
+| Scheduler | OneCycleLR |
+| AMP | torch.amp.GradScaler/autocast (~40% reducción tiempo) |
+| Early stopping | patience=3 |
+| Épocas máximas | 10 |
+
 ---
 
-## 7. Métricas de Evaluación
+## 8. Métricas de evaluación
 
-| Métrica | Tarea | Fórmula |
-|---------|-------|---------|
-| F1-score | Clasificación de parche | 2·P·R / (P+R) |
-| AUC-ROC | Clasificación de parche | Área bajo curva ROC |
-| Precisión | Clasificación de parche | TP / (TP+FP) |
-| Recall | Clasificación de parche | TP / (TP+FN) |
+| Métrica | Tarea | Descripción |
+|---------|-------|-------------|
+| **F1-score** | Clasificación de parche | Métrica principal — media armónica de precisión y recall |
+| AUC-ROC | Clasificación de parche | Poder discriminativo independiente del umbral |
+| AUC-PR | Clasificación de parche (CNN) | Curva Precisión-Recall, reportada por pliegue |
 | IoU (Jaccard) | Segmentación pixel | TP / (TP+FP+FN) |
-| Tiempo de inferencia | Eficiencia | ms/imagen en GPU |
+| Dice | Segmentación pixel | 2·TP / (2·TP+FP+FN) |
 
-### Umbral de decisión
-
-Se optimiza post-entrenamiento sobre la curva Precisión-Recall del fold de validación, seleccionando el umbral que maximiza F1. El umbral de referencia es 0.5; el umbral óptimo típicamente cae entre 0.35–0.55.
-
----
-
-## 8. Baseline Random Forest
-
-Como punto de comparación clásico, se implementa un clasificador Random Forest (200 árboles, `max_depth=None`) sobre **características HOG** extraídas del canal RGB:
-
-- Tamaño de celda: 16×16 píxeles
-- Bloques: 2×2 celdas
-- Orientaciones: 9
-
-El RF no utiliza los canales SAR, DEM ni Red-Edge; esto cuantifica la contribución del espectro extendido en los modelos deep learning.
+El F1-score es preferido porque: (i) penaliza simétricamente los falsos positivos y negativos, (ii) es robusto a desequilibrios moderados de clase, y (iii) permite comparación directa con la literatura del dataset [17].
 
 ---
 
 ## 9. Reproducibilidad
 
-Todas las semillas están fijadas con `set_seed(42)`:
-- `random.seed(42)`, `np.random.seed(42)`, `torch.manual_seed(42)`
-- `cudnn.deterministic = True`, `cudnn.benchmark = False`
+- Semilla fija `random_state=42` en todos los modelos
+- Pipeline de scikit-learn aplicado dentro de cada fold (sin leakage)
+- Caché de etiquetas en JSON para U-Net (evita releer 3,799 archivos HDF5 por ejecución)
+- Configuraciones completas en `configs/*.yaml`
 
-Los archivos de configuración YAML en `configs/` documentan todos los hiperparámetros. Los checkpoints del mejor modelo por fold se guardan en `results/<modelo>/fold_<k>/best_model.pth`.
+---
+
+**Referencias:** [8] Youssef & Pourghasemi (2021) · [9] Zhou (2024) · [11] Uribe-Ventura (2025) · [12] Song (2025) · [13] Song et al. (2025) · [14] Wang et al. (2024) · [17] Ghorbanzadeh et al. (2022)
+
