@@ -1,6 +1,7 @@
 # ============================================================
 # configs/unet_resnet34.yaml
-# Hiperparámetros para U-Net + ResNet-34 segmentación — Landslide4Sense
+# Hiperparámetros para U-Net + ResNet-34 — Landslide4Sense
+# Protocolo ejecutado: 2-Fold Stratified CV, Google Colab GPU T4
 # Uso: python scripts/run_training.py --config configs/unet_resnet34.yaml
 # ============================================================
 
@@ -15,36 +16,32 @@ checkpoint_dir: ./checkpoints/unet_resnet34
 # ── Dataset ──────────────────────────────────────────────────
 n_channels: 14
 patch_size: 128
-n_folds: 5
+n_folds: 2               # 2-Fold Stratified CV (optimizado para Colab T4)
+n_subset: 2000           # Subconjunto estratificado por restricciones de cómputo
 seed: 42
 
 # ── Entrenamiento ─────────────────────────────────────────────
-# U-Net es más pesada en memoria por las skip connections.
-# Batch de 16 es adecuado para GPU de 8-16 GB.
-epochs: 60
+epochs: 10               # Máximo por pliegue (restricción cómputo Colab)
 batch_size: 16
 num_workers: 4
 pin_memory: true
 
 # ── Optimizador ───────────────────────────────────────────────
 optimizer: adamw
-lr_head: 0.0001
-lr_backbone: 0.00001
+lr_head: 0.001           # 1e-3 — U-Net no congela encoder desde el inicio
+lr_backbone: 0.001
 weight_decay: 0.0001
-# Para U-Net no se congela el backbone — el decoder necesita gradientes
-# del encoder desde el principio para las skip connections
-freeze_epochs: 0
+freeze_epochs: 0         # Sin congelación — el decoder necesita gradientes del encoder
 
 # ── Scheduler ─────────────────────────────────────────────────
-scheduler: cosine
-T_max: 60
-eta_min: 0.0000001
+scheduler: one_cycle     # OneCycleLR — convergencia acelerada
+max_lr: 0.001
 
 # ── Función de pérdida ────────────────────────────────────────
-# Dice + BCE: el Dice Loss es crítico para objetos pequeños (área mediana 2.04%)
+# DiceBCELoss: crítico para objetos pequeños (área mediana 2.04%)
 loss: dice_bce
-dice_weight: 0.5          # 50% Dice + 50% BCE ponderado
-pos_weight: 0.703
+dice_weight: 0.5         # 50% Dice Loss + 50% Weighted BCE
+pos_weight: 0.70         # n_neg/n_pos = 1568/2231 (EDA real)
 
 # ── Umbral ────────────────────────────────────────────────────
 threshold: 0.5
@@ -52,18 +49,22 @@ optimize_threshold: true
 
 # ── Early Stopping ────────────────────────────────────────────
 early_stopping: true
-patience: 15
-monitor: val_iou          # Para segmentación se monitorea IoU, no F1 de parche
+patience: 3              # Patience reducido por limitación de épocas
+monitor: val_iou         # Para segmentación se monitorea IoU
 mode: max
+
+# ── Automatic Mixed Precision ─────────────────────────────────
+use_amp: true            # torch.amp.GradScaler/autocast (~40% reducción tiempo GPU T4)
+
+# ── Caché de etiquetas ────────────────────────────────────────
+use_label_cache: true    # JSON cache para evitar releer 3,799 HDF5 por ejecución
+label_cache_path: ./results/labels_cache.json
 
 # ── Data Augmentation ─────────────────────────────────────────
 augmentation: true
 aug_hflip_prob: 0.5
 aug_vflip_prob: 0.5
 aug_rotate90_prob: 0.5
-aug_brightness_prob: 0.3
-aug_noise_prob: 0.2
-aug_noise_std: 0.02
 
 # ── Normalización ─────────────────────────────────────────────
 normalize: true
@@ -72,6 +73,7 @@ norm_strategy: per_channel
 # ── Preentrenamiento ──────────────────────────────────────────
 pretrained: true
 pretrained_weights: imagenet
+encoder: resnet34
 
 # ── Hardware ──────────────────────────────────────────────────
 device: auto
@@ -79,5 +81,10 @@ device: auto
 # ── Logging ───────────────────────────────────────────────────
 log_interval: 10
 save_best_only: true
-tensorboard: true
 verbose: true
+
+# ── Resultados obtenidos (2-Fold CV, 2025) ───────────────────
+# F1 medio:   0.445  (tarea pixel-level — no comparable con clasificadores de parche)
+# AUC-PR:     0.391 / 0.420 (por pliegue)
+# AUC-ROC:   ~0.391
+# Nota: valores reflejan condiciones restrictivas (N=2,000, 10 épocas, umbral fijo 0.5)
