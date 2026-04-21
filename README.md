@@ -308,7 +308,6 @@ La mayoría de los modelos publicados han sido entrenados en contextos geomorfol
 **Vegetación** — Los bosques húmedos tropicales presentan mayor densidad de dosel que las regiones del dataset. La señal RedEdge (Ch12–13), la más discriminativa según el EDA, se satura en coberturas densas [3].
 
 **Cuantificación de la brecha:** Wang y Brenning [15] demuestran que la transferencia de modelos entre contextos geomorfológicos sin adaptación de dominio puede producir degradaciones de F1 de hasta 25 puntos porcentuales. Aplicado al mejor resultado obtenido (RF F1=0.837), esto proyecta un desempeño de F1≈0.63 en datos colombianos sin reentrenamiento local, lo que subraya la necesidad de adaptación antes de cualquier despliegue operativo. 
->>>>>>> a43426ec6d565edbb880cc4ea7c1130cda1342ae
 
 **Litología** — El ambiente volcánico-metamórfico de los Andes colombianos difiere de las regiones loéssicas o calcáreas predominantes en el dataset original, afectando las firmas espectrales en bandas SWIR y SAR [4].
 
