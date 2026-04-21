@@ -1,5 +1,8 @@
 # ============================================================
-# Hiperparámetros ajustados para estabilidad en Google Colab
+# configs/efficientnet_b4.yaml
+# Hiperparámetros para EfficientNet-B4 fine-tuned — Landslide4Sense
+# Protocolo ejecutado: 2-Fold Stratified CV, Google Colab GPU T4
+# Uso: python scripts/run_training.py --config configs/efficientnet_b4.yaml
 # ============================================================
 
 experiment_name: efficientnet_b4_finetuned
@@ -13,38 +16,37 @@ checkpoint_dir: ./checkpoints/efficientnet_b4
 # ── Dataset ──────────────────────────────────────────────────
 n_channels: 14
 patch_size: 128
-n_folds: 5
+n_folds: 2               # 2-Fold Stratified CV (optimizado para Colab T4)
 seed: 42
 
 # ── Entrenamiento ─────────────────────────────────────────────
-# Reducimos batch_size para evitar Out of Memory (OOM)
-# Bajamos num_workers para evitar bloqueos con Google Drive
-epochs: 50
-batch_size: 16       # <--- CAMBIO: De 24 a 16 para seguridad en T4 GPU
-num_workers: 2       # <--- CAMBIO: De 4 a 2 para estabilidad en Colab
+epochs: 20               # Máximo por pliegue (restricción cómputo Colab)
+batch_size: 16           # Reducido para evitar OOM en GPU T4
+num_workers: 2           # Reducido para estabilidad en Colab
 pin_memory: true
 
 # ── Optimizador ───────────────────────────────────────────────
 optimizer: adamw
-lr_head: 0.0001
-lr_backbone: 0.00001
+lr_head: 0.0001          # 1e-4 — cabeza de clasificación (nueva)
+lr_backbone: 0.00001     # 1e-5 — backbone preentrenado (10× menor)
 weight_decay: 0.0001
-freeze_epochs: 5
+freeze_epochs: 5         # Épocas con backbone congelado antes del fine-tuning completo
 
 # ── Scheduler ─────────────────────────────────────────────────
-scheduler: cosine
-T_max: 50
-eta_min: 0.0000001
+scheduler: one_cycle     # OneCycleLR — convergencia acelerada
+max_lr: 0.0001
 
 # ── Función de pérdida ────────────────────────────────────────
 loss: weighted_bce
-pos_weight: 0.703   # Basado en la proporción de positivos detectada
+pos_weight: 0.70         # n_neg/n_pos = 1568/2231 (EDA real)
 
-# ── Umbral y Early Stopping ───────────────────────────────────
+# ── Umbral ────────────────────────────────────────────────────
 threshold: 0.5
 optimize_threshold: true
+
+# ── Early Stopping ────────────────────────────────────────────
 early_stopping: true
-patience: 15
+patience: 5
 monitor: val_f1
 mode: max
 
@@ -53,9 +55,6 @@ augmentation: true
 aug_hflip_prob: 0.5
 aug_vflip_prob: 0.5
 aug_rotate90_prob: 0.5
-aug_brightness_prob: 0.3
-aug_noise_prob: 0.2
-aug_noise_std: 0.02
 
 # ── Normalización ─────────────────────────────────────────────
 normalize: true
@@ -64,6 +63,22 @@ norm_strategy: per_channel
 # ── Preentrenamiento ──────────────────────────────────────────
 pretrained: true
 pretrained_weights: imagenet
+init_strategy: mean          # Mean-initialization para adaptar 3 → 14 canales
+
+# ── Arquitectura ──────────────────────────────────────────────
+# EfficientNet-B4: escalado compuesto depth=1.8, width=1.4, resolution=1.3
+# 19M parámetros (vs 25M de ResNet-50)
 
 # ── Hardware ──────────────────────────────────────────────────
 device: auto
+use_amp: false
+
+# ── Logging ───────────────────────────────────────────────────
+log_interval: 10
+save_best_only: true
+verbose: true
+
+# ── Resultados obtenidos (2-Fold CV, 2025) ───────────────────
+# F1 medio:   0.756
+# AUC-ROC:   ~0.823  (mayor AUC-ROC que RF y ResNet-50)
+# AUC-PR:     0.807 / 0.839 (por pliegue)
