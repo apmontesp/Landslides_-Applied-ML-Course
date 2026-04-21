@@ -319,7 +319,7 @@ La mayoría de los modelos publicados han sido entrenados en contextos geomorfol
 
 ## Referencias
 
-> Fuentes ordenadas por primera aparición en el texto. Las referencias de literatura especializada provienen de la revisión sistemática realizada en el marco del proyecto.
+
 
 **Contexto y monitoreo**
 
