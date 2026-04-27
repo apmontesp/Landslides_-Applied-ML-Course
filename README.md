@@ -50,9 +50,9 @@ Este proyecto implementa y compara modelos de aprendizaje automático clásico y
 **Objetivo general:** Evaluar el desempeño de enfoques de aprendizaje automático clásico y profundo para la detección automática de deslizamientos de tierra en imágenes multisensoriales de satélite, bajo condiciones reales de datos limitados.
 
 **Objetivos específicos:**
-- **OE1 —** Caracterizar la distribución espectral, el balance de clases y la calidad del dataset Landslide4Sense mediante análisis exploratorio de datos (EDA), como fundamento para las decisiones de diseño experimental.
+- **OE1 —** Identificar la distribución espectral, el balance de clases y la calidad del dataset Landslide4Sense mediante análisis exploratorio de datos (EDA), como fundamento para las decisiones de diseño experimental.
 - **OE2 —** Evaluar el desempeño de tres clasificadores clásicos (Regresión Logística, SVM y Random Forest) con representación HOG, reportando F1-score y AUC-ROC bajo 2-Fold Stratified CV.
-- **OE3 —** Evaluar el desempeño de dos arquitecturas CNN de clasificación (ResNet-50 y EfficientNet-B4) y una de segmentación semántica (U-Net+ResNet-34), reportando F1-score/AUC-ROC y Dice/IoU bajo el mismo protocolo de validación cruzada.
+- **OE3 —** Determinar el desempeño de dos arquitecturas CNN de clasificación (ResNet-50 y EfficientNet-B4) y una de segmentación semántica (U-Net+ResNet-34), reportando F1-score/AUC-ROC y Dice/IoU bajo el mismo protocolo de validación cruzada.
 - **OE4 —** Analizar las brechas de dominio espectral, cobertura vegetal y contexto geológico que condicionan la transferibilidad de los modelos evaluados al contexto andino colombiano, determinando estrategias de adaptación potenciales.
 
 ---
