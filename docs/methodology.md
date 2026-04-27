@@ -2,7 +2,7 @@
 
 **Proyecto:** Landslide4Sense — Evaluación Comparativa de Modelos Clásicos y CNN
 
-**Fecha:** 2026
+**Fecha:** 2025
 
 ---
 
@@ -12,11 +12,18 @@ El experimento sigue un protocolo de **2-Fold Stratified Cross-Validation** sobr
 
 ### Pregunta de investigación
 
-> **¿En qué medida el fine-tuning de arquitecturas de Redes Neuronales Convolucionales sobre el dataset Landslide4Sense supera a los modelos clásicos con ingeniería de características HOG en términos de F1-score y AUC-ROC, bajo validación cruzada estratificada?**
+> **¿Qué enfoque de aprendizaje automático ofrece el mejor desempeño para la detección automática de deslizamientos de tierra en imágenes multisensoriales de satélite bajo condiciones de datos limitados?**
+
+### Objetivos específicos
+
+- **OE1 —** Caracterizar la distribución espectral, el balance de clases y la calidad del dataset Landslide4Sense mediante análisis exploratorio de datos (EDA), como fundamento para las decisiones de diseño experimental.
+- **OE2 —** Evaluar el desempeño de tres clasificadores clásicos (Regresión Logística, SVM y Random Forest) con representación HOG, reportando F1-score y AUC-ROC bajo 2-Fold Stratified CV.
+- **OE3 —** Evaluar el desempeño de dos arquitecturas CNN de clasificación (ResNet-50 y EfficientNet-B4) y una de segmentación semántica (U-Net+ResNet-34), reportando F1-score/AUC-ROC y Dice/IoU bajo el mismo protocolo de validación cruzada.
+- **OE4 —** Analizar las brechas de dominio espectral, cobertura vegetal y contexto geológico que condicionan la transferibilidad de los modelos evaluados al contexto andino colombiano, determinando estrategias de adaptación potenciales.
 
 ### Hipótesis de trabajo
 
-1. Los modelos CNN con fine-tuning superan a los baselines clásicos con HOG en F1-score cuando el volumen de datos es suficiente.
+1. El enfoque que mejor combine ingeniería de características y capacidad de generalización superará a los demás en términos de F1-score bajo condiciones de datos limitados.
 2. La fusión de canales SAR, DEM y Red-Edge mejora la detección respecto al uso exclusivo de canales ópticos.
 3. U-Net provee información espacial adicional (localización del deslizamiento) no disponible en clasificadores de parche.
 
@@ -185,4 +192,3 @@ El F1-score es preferido porque: (i) penaliza simétricamente los falsos positiv
 ---
 
 **Referencias:** [8] Youssef & Pourghasemi (2021) · [9] Zhou (2024) · [11] Uribe-Ventura (2025) · [12] Song (2025) · [13] Song et al. (2025) · [14] Wang et al. (2024) · [17] Ghorbanzadeh et al. (2022)
-
