@@ -2,7 +2,7 @@
 
 **Proyecto:** Landslide4Sense — Evaluación Comparativa de Modelos Clásicos y CNN
 
-**Fecha:** 2025
+**Fecha:** 2026
 
 ---
 
