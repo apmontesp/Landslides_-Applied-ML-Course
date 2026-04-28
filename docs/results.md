@@ -1,7 +1,7 @@
 # Resultados — Detección de Deslizamientos con Aprendizaje Automático
 
 **Proyecto:** Landslide4Sense — Evaluación Comparativa
-
+**Autor:** Ana Patricia Montes Pimienta — Universidad EAFIT
 **Fecha:** 2026
 
 > Resultados reales obtenidos sobre **2-Fold Stratified Cross-Validation** sobre 3,799 parches (clasificadores) y 2,000 parches (U-Net). Entorno: Google Colab GPU T4.
@@ -112,8 +112,4 @@ Los resultados de trabajos como BisDeNet y ShapeFormer operan sobre datasets sus
 - Completar ablation study de ResNet-50 (augmentation, freeze/unfreeze, pos_weight, LR uniforme)
 - Calibración del umbral de decisión sobre curva PR para CNN (potencial +2 pp F1)
 - Fine-tuning sobre datos mixtos (Landslide4Sense + inventario SGC Colombia) con CORAL domain adaptation
-- Evaluación con protocolo 5-Fold en entorno con mayor cómputo disponible
-
----
-
-**Referencias:** [8] Youssef & Pourghasemi (2021) · [10] Chen et al. / BisDeNet (2024) · [13] Song et al. (2025) · [14] Wang et al. (2024) · [17] Ghorbanzadeh et al. (2022) · [18] Lv et al. / ShapeFormer (2023)
+- Evaluación con protocolo 5-Fold en entorn

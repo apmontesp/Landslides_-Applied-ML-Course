@@ -1,7 +1,7 @@
 # Transferibilidad a Colombia — Contexto Andino
 
 **Proyecto:** Landslide4Sense — Análisis de Brechas de Dominio
-
+**Autor:** Ana Patricia Montes Pimienta — Universidad EAFIT
 **Fecha:** 2026
 
 ---
@@ -153,8 +153,4 @@ Los modelos entrenados sobre Landslide4Sense son un **punto de partida sólido**
 ---
 
 **Referencias:**
-[2] Ge et al. (2023) · [3] Thirugnanam et al. (2022) · [4] SGC (2017) · [5] Ayala-García & Ospino-Ramos (2019) · [6] Sun et al. (2024) · [15] Wang & Brenning (2023) · [19] Yu et al. (2025) · [20] Chen et al. (2025)
-
-- SGC — SIMMA: [simma.sgc.gov.co](https://simma.sgc.gov.co)
-- Google Earth Engine: [earthengine.google.com](https://earthengine.google.com)
-- Sentinel Hub: [sentinel-hub.com](https://www.sentinel-hub.com)
+[2] Ge et al. (2023) · [3] Thirugnanam et al. (2022) · [4] SGC (2017) · [5] Ayala-García & Ospino-Ramos (2019) · [6] Sun et al. (2024) · [15] Wang & Brenning (2023) · [19] Yu et al. (2025) �
