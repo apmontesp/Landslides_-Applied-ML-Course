@@ -1,0 +1,226 @@
+{
+  "dataset": "Landslide4Sense",
+  "version": "ISPRS Competition 2022",
+  "partitions": {
+    "TrainData": {
+      "n_images": 3799,
+      "n_masks": 3799
+    },
+    "ValidData": {
+      "n_images": 245,
+      "n_masks": 0
+    },
+    "TestData": {
+      "n_images": 800,
+      "n_masks": 0
+    }
+  },
+  "class_balance": {
+    "n_total": 3799,
+    "n_positive": 2231,
+    "n_negative": 1568,
+    "pct_positive": 58.73,
+    "pct_negative": 41.27,
+    "ratio_neg_per_pos": 0.703,
+    "NOTE": "Balance casi equiparado (~59%/41%) — diferente al 27%/73% documentado en la comp."
+  },
+  "landslide_area_stats": {
+    "n_positive_patches": 2231,
+    "mean_area_pct": 3.947,
+    "median_area_pct": 2.045,
+    "std_area_pct": 5.269,
+    "min_area_pct": 0.0061,
+    "max_area_pct": 47.53,
+    "p25_area_pct": 0.598,
+    "p75_area_pct": 5.164,
+    "p90_area_pct": 10.303,
+    "NOTE": "El 75% de parches positivos tiene <5.2% del área cubierta — deslizamientos pequeños"
+  },
+  "channel_statistics_by_class": [
+    {
+      "channel": 0,
+      "name": "S2-B2 Azul",
+      "pos_mean": 0.892,
+      "pos_std": 0.1262,
+      "neg_mean": 0.9679,
+      "neg_std": 0.1434,
+      "delta_pos_minus_neg": -0.0759,
+      "discriminative_rank": 6
+    },
+    {
+      "channel": 1,
+      "name": "S2-B3 Verde",
+      "pos_mean": 0.8896,
+      "pos_std": 0.2072,
+      "neg_mean": 0.9682,
+      "neg_std": 0.215,
+      "delta_pos_minus_neg": -0.0786,
+      "discriminative_rank": 5
+    },
+    {
+      "channel": 2,
+      "name": "S2-B4 Rojo",
+      "pos_mean": 0.9324,
+      "pos_std": 0.3101,
+      "neg_mean": 0.9882,
+      "neg_std": 0.3077,
+      "delta_pos_minus_neg": -0.0558,
+      "discriminative_rank": 8
+    },
+    {
+      "channel": 3,
+      "name": "S2-B8 NIR",
+      "pos_mean": 0.9667,
+      "pos_std": 0.5894,
+      "neg_mean": 0.9743,
+      "neg_std": 0.5409,
+      "delta_pos_minus_neg": -0.0076,
+      "discriminative_rank": 14
+    },
+    {
+      "channel": 4,
+      "name": "S2-B8A NIR-A",
+      "pos_mean": 1.0397,
+      "pos_std": 0.4656,
+      "neg_mean": 1.0176,
+      "neg_std": 0.4458,
+      "delta_pos_minus_neg": 0.0221,
+      "discriminative_rank": 11
+    },
+    {
+      "channel": 5,
+      "name": "S2-B11 SWIR1",
+      "pos_mean": 1.0288,
+      "pos_std": 0.4121,
+      "neg_mean": 1.0462,
+      "neg_std": 0.4705,
+      "delta_pos_minus_neg": -0.0174,
+      "discriminative_rank": 12
+    },
+    {
+      "channel": 6,
+      "name": "S2-B12 SWIR2",
+      "pos_mean": 1.0132,
+      "pos_std": 0.4263,
+      "neg_mean": 1.0428,
+      "neg_std": 0.4918,
+      "delta_pos_minus_neg": -0.0297,
+      "discriminative_rank": 10
+    },
+    {
+      "channel": 7,
+      "name": "S1-VV SAR",
+      "pos_mean": 1.0315,
+      "pos_std": 0.4613,
+      "neg_mean": 1.0443,
+      "neg_std": 0.5151,
+      "delta_pos_minus_neg": -0.0129,
+      "discriminative_rank": 13
+    },
+    {
+      "channel": 8,
+      "name": "S1-VH SAR",
+      "pos_mean": 1.2488,
+      "pos_std": 0.4965,
+      "neg_mean": 1.0606,
+      "neg_std": 0.5118,
+      "delta_pos_minus_neg": 0.1882,
+      "discriminative_rank": 4
+    },
+    {
+      "channel": 9,
+      "name": "ALOS DEM",
+      "pos_mean": 1.2739,
+      "pos_std": 0.7996,
+      "neg_mean": 1.0786,
+      "neg_std": 0.4194,
+      "delta_pos_minus_neg": 0.1954,
+      "discriminative_rank": 3
+    },
+    {
+      "channel": 10,
+      "name": "DEM Slope",
+      "pos_mean": 1.0703,
+      "pos_std": 0.5341,
+      "neg_mean": 1.0274,
+      "neg_std": 0.54,
+      "delta_pos_minus_neg": 0.043,
+      "discriminative_rank": 9
+    },
+    {
+      "channel": 11,
+      "name": "S2-B5 RedEdge1",
+      "pos_mean": 1.0769,
+      "pos_std": 0.6954,
+      "neg_mean": 1.0113,
+      "neg_std": 0.6593,
+      "delta_pos_minus_neg": 0.0656,
+      "discriminative_rank": 7
+    },
+    {
+      "channel": 12,
+      "name": "S2-B6 RedEdge2",
+      "pos_mean": 1.4782,
+      "pos_std": 0.5803,
+      "neg_mean": 0.9157,
+      "neg_std": 0.6851,
+      "delta_pos_minus_neg": 0.5625,
+      "discriminative_rank": 2
+    },
+    {
+      "channel": 13,
+      "name": "S2-B7 RedEdge3",
+      "pos_mean": 2.0209,
+      "pos_std": 1.048,
+      "neg_mean": 1.2136,
+      "neg_std": 0.9889,
+      "delta_pos_minus_neg": 0.8073,
+      "discriminative_rank": 1
+    }
+  ],
+  "most_discriminative_channels": [
+    {
+      "rank": 1,
+      "channel": 13,
+      "name": "S2-B7 RedEdge3",
+      "delta": 0.8073
+    },
+    {
+      "rank": 2,
+      "channel": 12,
+      "name": "S2-B6 RedEdge2",
+      "delta": 0.5625
+    },
+    {
+      "rank": 3,
+      "channel": 9,
+      "name": "ALOS DEM",
+      "delta": 0.1954
+    },
+    {
+      "rank": 4,
+      "channel": 8,
+      "name": "S1-VH SAR",
+      "delta": 0.1882
+    },
+    {
+      "rank": 5,
+      "channel": 1,
+      "name": "S2-B3 Verde",
+      "delta": -0.0786
+    }
+  ],
+  "data_quality": {
+    "nan_values": 0,
+    "zero_ratio_avg_pct": 0.0,
+    "border_patches": 0,
+    "leakage_train_val": "Sin duplicados detectados",
+    "leakage_train_test": "Sin duplicados detectados"
+  },
+  "implications_for_model": {
+    "class_balance_strategy": "Balance ~59/41 — ponderación leve de clases recomendada (pos_weight~0.7-1.0)",
+    "evaluation_metric": "F1-score e IoU preferidos sobre accuracy (muchos parches con área <2%)",
+    "key_channels": "Ch13 (RedEdge3), Ch12 (RedEdge2), Ch9 (DEM) y Ch8 (SAR-VH) son los más discriminativos",
+    "patch_size_challenge": "Mediana de área = 2.04% → 334 píxeles / 16384 totales — detección de objetos pequeños crítica"
+  }
+}

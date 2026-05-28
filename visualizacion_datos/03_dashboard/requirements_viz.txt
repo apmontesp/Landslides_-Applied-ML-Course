@@ -1,0 +1,8 @@
+# ─── Dependencias para el Dashboard de Visualización de Datos ───────────────
+# Instalar con:  pip install -r requirements_viz.txt
+
+streamlit>=1.32.0
+plotly>=5.20.0
+pandas>=2.0.0
+Pillow>=10.0.0
+numpy>=1.24.0

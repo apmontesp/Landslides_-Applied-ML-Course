@@ -1,0 +1,42 @@
+{
+  "best_model": "Random Forest",
+  "best_f1": 0.8368495718865354,
+  "ranking": [
+    {
+      "rank": 1,
+      "model": "Random Forest",
+      "mean_f1": 0.8368495718865354,
+      "tipo": "Cl\u00e1sico"
+    },
+    {
+      "rank": 2,
+      "model": "SVM (RBF)",
+      "mean_f1": 0.7974139573366343,
+      "tipo": "Cl\u00e1sico"
+    },
+    {
+      "rank": 3,
+      "model": "Logistic Regression",
+      "mean_f1": 0.7885616299170433,
+      "tipo": "Cl\u00e1sico"
+    },
+    {
+      "rank": 4,
+      "model": "ResNet-50",
+      "mean_f1": 0.7839972552693897,
+      "tipo": "Deep Learning"
+    },
+    {
+      "rank": 5,
+      "model": "EfficientNet-B4",
+      "mean_f1": 0.7554356812169312,
+      "tipo": "Deep Learning"
+    },
+    {
+      "rank": 6,
+      "model": "U-Net ResNet-34",
+      "mean_f1": 0.4442873686556699,
+      "tipo": "Deep Learning"
+    }
+  ]
+}
