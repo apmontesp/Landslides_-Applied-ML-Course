@@ -1,18 +1,17 @@
 """
-Dashboard — Detección de Deslizamientos con Machine Learning en Colombia
-Visualización de Datos · Entregable Final
+Dashboard interactivo — Detección de Deslizamientos con Machine Learning en Colombia
+Visualización de Datos · Entregable Final · Plotly + Streamlit
 """
 
 import os, json
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.lines import Line2D
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import streamlit as st
 
 # ──────────────────────────────────────────────────────────────────
-# CONFIGURACIÓN
+# CONFIG
 # ──────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Deslizamientos ML · Colombia",
@@ -21,35 +20,25 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# CSS personalizado
 st.markdown("""
 <style>
-    .main { background-color: #FFFFFF; }
-    .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
-    h1 { color: #111827; font-size: 1.7rem !important; }
-    h2 { color: #1F2937; font-size: 1.25rem !important; border-bottom: 2px solid #DC2626;
-         padding-bottom: 6px; margin-top: 1.2rem; }
-    h3 { color: #374151; font-size: 1.05rem !important; }
-    .argumento-box {
-        background: #FEF2F2; border-left: 4px solid #DC2626;
-        padding: 12px 16px; border-radius: 4px; margin-bottom: 1rem;
-        font-size: 0.95rem; color: #7F1D1D;
-    }
-    .hallazgo-box {
-        background: #F9FAFB; border-left: 4px solid #6B7280;
-        padding: 10px 14px; border-radius: 4px; margin-bottom: 0.8rem;
-        font-size: 0.9rem; color: #374151;
-    }
-    .metric-card {
-        background: #F9FAFB; border: 1px solid #E5E7EB;
-        border-radius: 8px; padding: 14px; text-align: center;
-    }
-    .stSidebar { background-color: #F9FAFB; }
+  .main { background:#FFFFFF; }
+  .block-container { padding-top:1.4rem; padding-bottom:2rem; }
+  h1 { color:#111827; }
+  h2 { color:#1F2937; border-bottom:2px solid #DC2626; padding-bottom:5px; }
+  .arg-box { background:#FEF2F2; border-left:4px solid #DC2626;
+             padding:11px 15px; border-radius:4px; margin-bottom:.9rem;
+             font-size:.94rem; color:#7F1D1D; }
+  .hall-box { background:#F9FAFB; border-left:4px solid #6B7280;
+              padding:9px 13px; border-radius:4px; margin-bottom:.7rem;
+              font-size:.9rem; color:#374151; }
+  .kpi-card { background:#F9FAFB; border:1px solid #E5E7EB;
+              border-radius:8px; padding:14px; text-align:center; }
 </style>
 """, unsafe_allow_html=True)
 
 # ──────────────────────────────────────────────────────────────────
-# RUTAS Y DATOS
+# DATOS
 # ──────────────────────────────────────────────────────────────────
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR   = os.path.join(SCRIPT_DIR, '..', 'data')
@@ -59,48 +48,65 @@ def load_data():
     df = pd.read_csv(os.path.join(DATA_DIR, 'comparison_table.csv'))
     for col in ['F1 medio','Std','AUC-ROC','Precisión','Recall','IoU']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
-    ch = pd.read_csv(os.path.join(DATA_DIR, 'channel_stats_by_class.csv'))
-
     FOLDS_FB = {
-        'LR':  [0.7929, 0.7681, 0.8232, 0.7772, 0.7813],
-        'SVM': [0.7526, 0.7731, 0.8100, 0.8325, 0.8189],
-        'RF':  [0.8363, 0.8238, 0.8480, 0.8401, 0.8361],
-        'ResNet-50':      [0.7762, 0.7708, 0.8154, 0.7636, 0.8065],
-        'U-Net ResNet34': [0.6855, 0.7084, 0.7061, 0.6900, 0.6842],
+        'LR':             [0.7929,0.7681,0.8232,0.7772,0.7813],
+        'SVM':            [0.7526,0.7731,0.8100,0.8325,0.8189],
+        'RF':             [0.8363,0.8238,0.8480,0.8401,0.8361],
+        'ResNet-50':      [0.7762,0.7708,0.8154,0.7636,0.8065],
+        'U-Net ResNet34': [0.6855,0.7084,0.7061,0.6900,0.6842],
     }
     try:
         def lf(fname, key='best_f1', alt='f1_pixel_thr05'):
-            with open(os.path.join(DATA_DIR, 'folds', fname)) as f:
+            with open(os.path.join(DATA_DIR,'folds',fname)) as f:
                 d = json.load(f)
             return [x.get(key, x.get(alt, 0)) for x in d['folds']]
         folds = {
-            'LR':  lf('logistic_regression_folds.json'),
-            'SVM': lf('svm_folds.json'),
-            'RF':  lf('random_forest_folds.json'),
+            'LR':             lf('logistic_regression_folds.json'),
+            'SVM':            lf('svm_folds.json'),
+            'RF':             lf('random_forest_folds.json'),
             'ResNet-50':      lf('resnet50_folds.json', key='f1_thr05'),
             'U-Net ResNet34': lf('unet_folds.json',    key='f1_pixel_thr05'),
         }
     except Exception:
         folds = FOLDS_FB
-    return df, ch, folds
+    return df, folds
 
-df, ch, fold_data = load_data()
+df, fold_data = load_data()
 
-# Paleta
+# ──────────────────────────────────────────────────────────────────
+# PALETA Y CONSTANTES
+# ──────────────────────────────────────────────────────────────────
 C = {
-    'RedEdge':'#DC2626','Topo':'#F97316','SAR':'#EAB308','Optico':'#3B82F6',
     'red':'#DC2626','gray':'#9CA3AF','dark':'#374151',
-    'clasico':'#6B7280','dl':'#C4B5FD','blue_dark':'#1E3A5F','blue_light':'#93C5FD',
+    'clasico':'#6B7280','dl':'#C4B5FD',
+    'RedEdge':'#DC2626','Topo':'#F97316','SAR':'#EAB308','Optico':'#3B82F6',
+    'blue_dark':'#1E3A5F','blue_light':'#93C5FD',
+    'bg':'white','grid':'#EEEEEE',
 }
 
-def mpl_defaults():
-    plt.rcParams.update({
-        'figure.facecolor':'white','axes.facecolor':'white',
-        'axes.edgecolor':'#CCCCCC','axes.spines.top':False,'axes.spines.right':False,
-        'axes.grid':True,'grid.color':'#EEEEEE','grid.linewidth':0.8,
-        'font.family':'sans-serif','font.size':11,
-        'xtick.color':'#555555','ytick.color':'#555555','axes.labelcolor':'#333333',
-    })
+TODOS = ['LR','SVM','RF','ResNet-50','EfficientNet','U-Net']
+F1_VALS = {'LR':0.7886,'SVM':0.7974,'RF':0.8368,'ResNet-50':0.7840,'EfficientNet':0.7554,'U-Net':0.4443}
+TIPO    = {'LR':'Clásico','SVM':'Clásico','RF':'Clásico','ResNet-50':'DL','EfficientNet':'DL','U-Net':'DL'}
+
+def col_modelo(m):
+    if m == 'RF': return C['red']
+    return C['clasico'] if TIPO.get(m)=='Clásico' else C['gray']
+
+def layout_base(title='', xlab='', ylab='', height=420):
+    return dict(
+        title=dict(text=title, font=dict(size=14, color='#111827'), x=0.02),
+        xaxis=dict(title=xlab, gridcolor=C['grid'], showline=True,
+                   linecolor='#CCCCCC', zeroline=False),
+        yaxis=dict(title=ylab, gridcolor=C['grid'], showline=False,
+                   tickfont=dict(size=11)),
+        plot_bgcolor=C['bg'], paper_bgcolor=C['bg'],
+        height=height, margin=dict(l=20,r=20,t=50,b=40),
+        legend=dict(bgcolor='rgba(255,255,255,0.85)',
+                    bordercolor='#E5E7EB', borderwidth=1,
+                    font=dict(size=10)),
+        hoverlabel=dict(bgcolor='white', font_size=12,
+                        bordercolor='#E5E7EB'),
+    )
 
 # ──────────────────────────────────────────────────────────────────
 # SIDEBAR
@@ -108,553 +114,530 @@ def mpl_defaults():
 with st.sidebar:
     st.markdown("## 🏔️ Landslide ML · Colombia")
     st.markdown("---")
-    seccion = st.radio(
-        "Navegación",
-        ["Inicio", "Exploración", "Argumento", "Conclusión"],
-        index=0,
-    )
+    seccion = st.radio("Navegación",
+        ["Inicio","Exploración","Argumento","Conclusión"], index=0)
     st.markdown("---")
     st.markdown("**Filtros globales**")
-    umbral_f1 = st.slider("Umbral F1 de referencia", 0.60, 0.95, 0.80, 0.01)
-    todos_modelos = ['LR','SVM','RF','ResNet-50','EfficientNet','U-Net']
-    sel_modelos = st.multiselect(
-        "Modelos a mostrar",
-        todos_modelos,
-        default=todos_modelos,
-    )
+    umbral = st.slider("Umbral F1 de referencia", 0.60, 0.95, 0.80, 0.01)
+    sel = st.multiselect("Modelos a mostrar", TODOS, default=TODOS)
     mostrar_lit = st.toggle("Mostrar benchmarks literatura", value=True)
     st.markdown("---")
-    st.caption("Datos: Landslide4Sense Dataset\nModelos entrenados en Google Colab")
+    st.caption("Datos: Landslide4Sense Dataset\nModelos: Google Colab")
 
-# Datos filtrados
-MODELOS_F1 = {
-    'LR':0.7886,'SVM':0.7974,'RF':0.8368,
-    'ResNet-50':0.7840,'EfficientNet':0.7554,'U-Net':0.4443,
-}
-MODELOS_TIPO = {
-    'LR':'Clásico','SVM':'Clásico','RF':'Clásico',
-    'ResNet-50':'DL','EfficientNet':'DL','U-Net':'DL',
-}
-modelos_vis  = [m for m in todos_modelos if m in sel_modelos]
-f1_vis       = [MODELOS_F1[m] for m in modelos_vis]
-tipo_vis     = [MODELOS_TIPO[m] for m in modelos_vis]
+# ──────────────────────────────────────────────────────────────────
+# GRÁFICAS — funciones Plotly
+# ──────────────────────────────────────────────────────────────────
 
-def color_modelo(nombre):
-    if nombre == 'RF': return C['red']
-    return C['clasico'] if MODELOS_TIPO.get(nombre) == 'Clásico' else C['gray']
+def fig_f1_barras(modelos, umbral_f1):
+    orden = sorted(modelos, key=lambda m: F1_VALS.get(m, 0))
+    colors = [col_modelo(m) for m in orden]
+    f1s = [F1_VALS[m] for m in orden]
 
-# ══════════════════════════════════════════════════════════════════
-# SECCIÓN 1 — INICIO
-# ══════════════════════════════════════════════════════════════════
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        y=orden, x=f1s,
+        orientation='h',
+        marker_color=colors,
+        text=[f'{v:.3f}' for v in f1s],
+        textposition='outside',
+        hovertemplate='<b>%{y}</b><br>F1-Score: %{x:.4f}<br>Tipo: ' +
+                      '<extra></extra>',
+        customdata=[[TIPO.get(m,'—'), 'Modelo con mejor resultado' if m=='RF' else ''] for m in orden],
+        hovertemplate='<b>%{y}</b><br>F1-Score: %{x:.4f}<br>Tipo: %{customdata[0]}<extra></extra>',
+    ))
+    fig.add_vline(x=umbral_f1, line_dash='dash', line_color=C['dark'], line_width=1.5,
+                  annotation_text=f'F1={umbral_f1:.2f}',
+                  annotation_position='top right',
+                  annotation_font_color=C['dark'])
+    fig.update_layout(**layout_base(
+        title='F1-Score por Modelo — Detección de Deslizamientos',
+        xlab='F1-Score (0 = no detecta nada · 1 = perfecto)',
+        ylab='Modelo', height=max(350, len(orden)*60)
+    ))
+    fig.update_xaxes(range=[0, 0.97])
+    return fig
+
+
+def fig_pr_scatter(modelos_vis, mostrar_lit, umbral_f1):
+    datos_pr = {
+        'LR':(0.7971,0.7806,'Clásico'),
+        'SVM':(0.8193,0.7777,'Clásico'),
+        'RF':(0.7439,0.9569,'Clásico'),
+        'ResNet-50':(0.7219,0.8771,'DL'),
+    }
+    lit = [
+        ('Ghorbanzadeh et al. (2022)',  0.717,'#FECACA'),
+        ('Lv et al. — L4S (2022)',      0.739,'#F87171'),
+        ('Liu et al. — Multi-scale (2024)', 0.760,'#EF4444'),
+        ('Enhanced U-Net++ (2025)',     0.841,'#B91C1C'),
+    ]
+    fig = go.Figure()
+
+    if mostrar_lit:
+        r_arr = np.linspace(0.63, 0.999, 300)
+        for nombre, f1v, cl in lit:
+            p_arr = f1v * r_arr / (2*r_arr - f1v)
+            mask = (p_arr > 0) & (p_arr <= 1.0)
+            fig.add_trace(go.Scatter(
+                x=r_arr[mask], y=p_arr[mask], mode='lines',
+                line=dict(color=cl, dash='dash', width=1.3),
+                name=nombre, legendgroup='lit',
+                hovertemplate=f'<b>{nombre}</b><br>F1 reportado: {f1v}<br>Recall: %{{x:.3f}}<br>Precisión: %{{y:.3f}}<extra></extra>',
+            ))
+
+    for nm, (prec, rec, tipo) in datos_pr.items():
+        if nm not in modelos_vis:
+            continue
+        mk = 'diamond' if tipo == 'DL' else 'circle'
+        fig.add_trace(go.Scatter(
+            x=[rec], y=[prec], mode='markers+text',
+            name=nm,
+            marker=dict(size=14, color=col_modelo(nm),
+                        line=dict(color='white', width=2),
+                        symbol=mk),
+            text=[nm], textposition='top right',
+            textfont=dict(size=11, color=col_modelo(nm)),
+            hovertemplate=f'<b>{nm}</b><br>Recall: {rec:.4f}<br>Precisión: {prec:.4f}<br>Tipo: {tipo}<extra></extra>',
+        ))
+
+    fig.update_layout(**layout_base(
+        title='Precisión vs Cobertura por Modelo',
+        xlab='Cobertura (Recall) — fracción de deslizamientos reales detectados',
+        ylab='Precisión — de las alertas, ¿cuántas son reales?',
+        height=500,
+    ))
+    fig.update_xaxes(range=[0.62, 1.02])
+    fig.update_yaxes(range=[0.62, 0.90])
+    return fig
+
+
+def fig_canales():
+    canales = [
+        ('S2-B7 RedEdge3',0.8073,'RedEdge','Sentinel-2 B7'),
+        ('S2-B6 RedEdge2',0.5625,'RedEdge','Sentinel-2 B6'),
+        ('ALOS DEM',      0.1954,'Topo',   'Modelo de elevación digital'),
+        ('S1-VH SAR',     0.1882,'SAR',    'Sentinel-1 polarización VH'),
+        ('DEM Slope',     0.0430,'Topo',   'Pendiente derivada del DEM'),
+        ('S2-B8A NIR-A',  0.0221,'Optico', 'Sentinel-2 B8A NIR estrecho'),
+    ]
+    fig = go.Figure()
+    for nm, delta, grp, desc in canales:
+        fig.add_trace(go.Bar(
+            y=[nm], x=[delta],
+            orientation='h',
+            name=grp,
+            legendgroup=grp,
+            showlegend=(nm == [c[0] for c in canales if c[2]==grp][0]),
+            marker_color=C[grp],
+            hovertemplate=f'<b>{nm}</b><br>Δ brecha de señal: {delta:.4f}<br>Sensor: {desc}<br>Grupo: {grp}<extra></extra>',
+        ))
+    fig.update_layout(**layout_base(
+        title='Canales Satelitales más Discriminativos',
+        xlab='Brecha de señal (Δ) entre zonas con y sin deslizamiento',
+        ylab='Canal satelital', height=380,
+    ))
+    fig.update_xaxes(range=[0, 0.97])
+    return fig
+
+
+def fig_dot_plot():
+    dot_data = [
+        ('S2-B7 RedEdge3',2.0209,1.2136,'RedEdge'),
+        ('S2-B6 RedEdge2',1.4782,0.9157,'RedEdge'),
+        ('ALOS DEM',      1.2739,1.0786,'Topo'),
+        ('S1-VH SAR',     1.2488,1.0606,'SAR'),
+        ('S2-B8A NIR-A',  1.0397,1.0176,'Optico'),
+        ('DEM Slope',     1.0703,1.0274,'Topo'),
+    ]
+    fig = go.Figure()
+    for nm, pos, neg, grp in dot_data:
+        # Línea conectora
+        fig.add_trace(go.Scatter(
+            x=[neg, pos], y=[nm, nm], mode='lines',
+            line=dict(color='#D1D5DB', width=2),
+            showlegend=False,
+            hoverinfo='skip',
+        ))
+        # Punto sólido = con deslizamiento
+        fig.add_trace(go.Scatter(
+            x=[pos], y=[nm], mode='markers',
+            name=f'{grp} — con deslizamiento',
+            legendgroup=grp,
+            showlegend=(nm == [d[0] for d in dot_data if d[3]==grp][0]),
+            marker=dict(size=12, color=C[grp],
+                        line=dict(color='white', width=2)),
+            hovertemplate=f'<b>{nm}</b><br>Con deslizamiento: {pos:.4f}<br>Sin deslizamiento: {neg:.4f}<br>Δ = {pos-neg:.4f}<br>Grupo: {grp}<extra></extra>',
+        ))
+        # Punto hueco = sin deslizamiento
+        fig.add_trace(go.Scatter(
+            x=[neg], y=[nm], mode='markers',
+            showlegend=False,
+            marker=dict(size=12, color='white',
+                        line=dict(color=C[grp], width=2.5)),
+            hovertemplate=f'<b>{nm}</b><br>Sin deslizamiento: {neg:.4f}<br>Con deslizamiento: {pos:.4f}<br>Δ = {pos-neg:.4f}<extra></extra>',
+        ))
+
+    fig.update_layout(**layout_base(
+        title='Brecha de Señal entre Clases — Top 6 Canales<br><sup>Sólido = con deslizamiento · Hueco = sin deslizamiento · Δ = brecha</sup>',
+        xlab='Reflectancia media normalizada',
+        ylab='Canal satelital', height=400,
+    ))
+    fig.update_xaxes(range=[0.8, 2.55])
+    return fig
+
+
+def fig_folds(folds_dict, umbral_f1):
+    orden = sorted(folds_dict.keys(), key=lambda k: np.mean(folds_dict[k]), reverse=True)
+    fig = go.Figure()
+    for m in orden:
+        vals = folds_dict[m]
+        media = np.mean(vals)
+        std   = np.std(vals, ddof=1)
+        color = C['red'] if 'RF' in m else '#9CA3AF'
+        fig.add_trace(go.Box(
+            x=vals, y=[m]*len(vals),
+            orientation='h',
+            name=m,
+            boxpoints='all',
+            jitter=0.4,
+            pointpos=0,
+            marker=dict(size=9, color=color,
+                        line=dict(color='white', width=1.5)),
+            line=dict(color=color),
+            fillcolor=color.replace(')', ',0.35)').replace('rgb','rgba') if 'rgb' in color else color + '55',
+            hovertemplate=f'<b>{m}</b><br>F1 fold: %{{x:.4f}}<br>Media: {media:.4f}<br>Std: {std:.4f}<extra></extra>',
+        ))
+    fig.add_vline(x=umbral_f1, line_dash='dash', line_color=C['dark'], line_width=1.5,
+                  annotation_text=f'F1={umbral_f1:.2f}',
+                  annotation_position='bottom right',
+                  annotation_font_color=C['dark'])
+    fig.update_layout(**layout_base(
+        title='Consistencia del modelo como indicador de confianza',
+        xlab='F1-Score por fold — cada punto es un experimento independiente',
+        ylab='Modelo', height=max(380, len(orden)*70),
+    ))
+    fig.update_traces(boxmean=True)
+    return fig
+
+
+def fig_protocolos(modelos_cl, modelos_dl, umbral_f1):
+    f1_opt  = {'LR':0.7886,'SVM':0.7974,'RF':0.8368}
+    f1_base = {'LR':0.7512,'SVM':0.7340,'RF':0.7891}
+    f1_dl   = {'ResNet-50':0.7840,'EfficientNet':0.7554,'U-Net':0.4443}
+
+    fig = go.Figure()
+    # Barras 14 bandas
+    if modelos_cl:
+        fig.add_trace(go.Bar(
+            name='14 bandas del satélite',
+            x=modelos_cl,
+            y=[f1_opt[m] for m in modelos_cl],
+            marker_color=C['blue_dark'],
+            text=[f'{f1_opt[m]:.3f}' for m in modelos_cl],
+            textposition='outside',
+            hovertemplate='<b>%{x}</b><br>14 bandas: %{y:.4f}<br>Protocolo optimizado (n=1500)<extra></extra>',
+        ))
+        fig.add_trace(go.Bar(
+            name='Características básicas del terreno',
+            x=modelos_cl,
+            y=[f1_base[m] for m in modelos_cl],
+            marker_color=C['blue_light'],
+            text=[f'{f1_base[m]:.3f}' for m in modelos_cl],
+            textposition='outside',
+            hovertemplate='<b>%{x}</b><br>Básico: %{y:.4f}<br>Comparable literatura (n=3799)<extra></extra>',
+        ))
+    if modelos_dl:
+        fig.add_trace(go.Bar(
+            name='Deep Learning',
+            x=modelos_dl,
+            y=[f1_dl[m] for m in modelos_dl],
+            marker_color='#E5E7EB',
+            text=[f'{f1_dl[m]:.3f}' for m in modelos_dl],
+            textposition='outside',
+            hovertemplate='<b>%{x}</b><br>F1: %{y:.4f}<br>Deep Learning<extra></extra>',
+        ))
+    fig.add_hline(y=umbral_f1, line_dash='dash', line_color=C['dark'], line_width=1.5,
+                  annotation_text=f'F1={umbral_f1:.2f}',
+                  annotation_position='top right')
+    fig.update_layout(**layout_base(
+        title='El protocolo de evaluación cambia el resultado',
+        xlab='Modelo', ylab='F1-Score', height=460,
+    ))
+    fig.update_layout(barmode='group', yaxis_range=[0.3, 0.97])
+    return fig
+
+
+def fig_complejidad(modelos, umbral_f1):
+    comp = {'LR':'Baja','SVM':'Media','RF':'Media','ResNet-50':'Alta','EfficientNet':'Alta','U-Net':'Alta'}
+    orden = sorted(modelos, key=lambda m: F1_VALS.get(m,0))
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        y=orden,
+        x=[F1_VALS[m] for m in orden],
+        orientation='h',
+        marker_color=[col_modelo(m) for m in orden],
+        text=[f'{F1_VALS[m]:.3f}' for m in orden],
+        textposition='outside',
+        customdata=[[TIPO.get(m,'—'), comp.get(m,'—')] for m in orden],
+        hovertemplate='<b>%{y}</b><br>F1-Score: %{x:.4f}<br>Tipo: %{customdata[0]}<br>Complejidad: %{customdata[1]}<extra></extra>',
+    ))
+    fig.add_vline(x=umbral_f1, line_dash='dash', line_color=C['dark'], line_width=1.5,
+                  annotation_text=f'F1={umbral_f1:.2f}',
+                  annotation_position='top right',
+                  annotation_font_color=C['dark'])
+    fig.update_layout(**layout_base(
+        title='Complejidad del modelo vs. resultado real<br><sup>Más parámetros no garantizan mejor detección</sup>',
+        xlab='F1-Score — capacidad de detección',
+        ylab='Modelo', height=max(350, len(orden)*62),
+    ))
+    fig.update_xaxes(range=[0, 0.97])
+    return fig
+
+
+def fig_canales_colombia():
+    canales = [
+        ('S2-B7 RedEdge3',0.8073,'RedEdge',True,'Sentinel-2 B7 — mayor discriminación'),
+        ('S2-B6 RedEdge2',0.5625,'RedEdge',True,'Sentinel-2 B6'),
+        ('ALOS DEM',      0.1954,'Topo',   False,'Modelo de elevación ALOS'),
+        ('S1-VH SAR',     0.1882,'SAR',    True,'Sentinel-1 polarización VH'),
+        ('DEM Slope',     0.0430,'Topo',   False,'Pendiente derivada del DEM'),
+        ('S2-B8A NIR-A',  0.0221,'Optico', True,'Sentinel-2 B8A NIR estrecho'),
+    ]
+    fig = go.Figure()
+    for nm, delta, grp, disp, desc in canales:
+        estado = 'Copernicus (gratuito)' if disp else 'Requiere DEM externo'
+        fig.add_trace(go.Bar(
+            y=[nm], x=[delta],
+            orientation='h',
+            name=grp,
+            legendgroup=grp,
+            showlegend=(nm == [c[0] for c in canales if c[2]==grp][0]),
+            marker_color=C[grp],
+            hovertemplate=f'<b>{nm}</b><br>Δ: {delta:.4f}<br>Sensor: {desc}<br>Disponibilidad: {estado}<extra></extra>',
+        ))
+    fig.update_layout(**layout_base(
+        title='Canales más discriminativos y su disponibilidad para Colombia',
+        xlab='Brecha de señal (Δ)',
+        ylab='Canal satelital', height=380,
+    ))
+    fig.update_xaxes(range=[0, 0.97])
+    return fig
+
+
+def fig_consistencia(folds_dict, umbral_f1):
+    orden = sorted(folds_dict.keys(), key=lambda k: np.mean(folds_dict[k]), reverse=True)
+    fig = go.Figure()
+    for m in orden:
+        vals = folds_dict[m]
+        media = np.mean(vals); std = np.std(vals,ddof=1)
+        color = C['red'] if 'RF' in m else '#9CA3AF'
+        for i, v in enumerate(vals):
+            fig.add_trace(go.Scatter(
+                x=[v], y=[m],
+                mode='markers',
+                name=m,
+                legendgroup=m,
+                showlegend=(i == 0),
+                marker=dict(size=11, color=color,
+                            line=dict(color='white', width=1.5)),
+                hovertemplate=f'<b>{m}</b><br>Fold {i+1}: {v:.4f}<br>Media: {media:.4f}  Std: {std:.4f}<extra></extra>',
+            ))
+        # Línea media
+        fig.add_trace(go.Scatter(
+            x=[media-std, media+std], y=[m, m],
+            mode='lines',
+            line=dict(color=color, width=8),
+            opacity=0.3,
+            showlegend=False,
+            hoverinfo='skip',
+        ))
+    fig.add_vline(x=umbral_f1, line_dash='dash', line_color=C['dark'], line_width=1.5,
+                  annotation_text=f'F1={umbral_f1:.2f}',
+                  annotation_position='bottom right',
+                  annotation_font_color=C['dark'])
+    fig.update_layout(**layout_base(
+        title='Consistencia del modelo como indicador de confianza<br><sup>En Colombia, los datos serán escasos — la variabilidad importa más</sup>',
+        xlab='F1-Score por fold — cada punto es un experimento independiente',
+        ylab='Modelo', height=max(380, len(orden)*72),
+    ))
+    return fig
+
+# ──────────────────────────────────────────────────────────────────
+# SECCIÓN: INICIO
+# ──────────────────────────────────────────────────────────────────
 if seccion == "Inicio":
     st.markdown("# Detección de Deslizamientos con Machine Learning")
     st.markdown("### ¿Qué nos dicen los modelos sobre cómo proteger Colombia?")
     st.markdown("---")
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown('<div class="metric-card"><h2 style="border:none;color:#DC2626;font-size:2rem!important">400–600</h2><p>eventos de deslizamiento por año en Colombia<br><small style="color:#9CA3AF">(SGC, 2023)</small></p></div>', unsafe_allow_html=True)
-    with col2:
-        st.markdown('<div class="metric-card"><h2 style="border:none;color:#DC2626;font-size:2rem!important">0</h2><p>datasets etiquetados colombianos disponibles públicamente</p></div>', unsafe_allow_html=True)
-    with col3:
-        st.markdown('<div class="metric-card"><h2 style="border:none;color:#DC2626;font-size:2rem!important">14</h2><p>bandas satelitales analizadas · Sentinel-1/2 + DEM</p></div>', unsafe_allow_html=True)
+    c1,c2,c3 = st.columns(3)
+    with c1:
+        st.markdown('<div class="kpi-card"><div style="font-size:2.2rem;font-weight:700;color:#DC2626">400–600</div><div>eventos/año en Colombia<br><small style="color:#9CA3AF">SGC, 2023</small></div></div>', unsafe_allow_html=True)
+    with c2:
+        st.markdown('<div class="kpi-card"><div style="font-size:2.2rem;font-weight:700;color:#DC2626">0</div><div>datasets etiquetados colombianos disponibles públicamente</div></div>', unsafe_allow_html=True)
+    with c3:
+        st.markdown('<div class="kpi-card"><div style="font-size:2.2rem;font-weight:700;color:#DC2626">14</div><div>bandas satelitales analizadas<br>Sentinel-1/2 + DEM</div></div>', unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown('<div class="argumento-box"><strong>Argumento central</strong><br>"El modelo más sofisticado no siempre gana — y en Colombia, donde no hay un dataset propio, elegir mal el modelo y el protocolo de evaluación puede ser la diferencia entre una herramienta útil y una que falla cuando más se necesita."</div>', unsafe_allow_html=True)
+    st.markdown('<div class="arg-box"><strong>Argumento central:</strong><br>"El modelo más sofisticado no siempre gana — y en Colombia, donde no hay un dataset propio, elegir mal el modelo y el protocolo de evaluación puede ser la diferencia entre una herramienta útil y una que falla cuando más se necesita."</div>', unsafe_allow_html=True)
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("#### El recorrido de este análisis")
-        for paso, desc in [
-            ("1. Exploración","¿Qué muestran los datos sin hipótesis previas?"),
-            ("2. Trampa metodológica","El resultado cambia según cómo evalúes el modelo"),
-            ("3. Contexto global","¿Dónde estamos frente a la literatura internacional?"),
-            ("4. Complejidad","Más parámetros no garantizan mejor detección"),
-            ("5. Disponibilidad","¿Qué información satelital necesita Colombia?"),
-            ("6. Confianza","¿En qué modelo confiar con datos escasos?"),
-        ]:
-            st.markdown(f'<div class="hallazgo-box"><strong>{paso}</strong> — {desc}</div>', unsafe_allow_html=True)
-    with c2:
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.markdown("#### Recorrido del análisis")
+        pasos = [("1. Exploración","¿Qué muestran los datos sin hipótesis?"),
+                 ("2. Trampa metodológica","El resultado cambia según cómo evalúes"),
+                 ("3. Colombia vs mundo","¿Dónde estamos frente a la literatura?"),
+                 ("4. Complejidad","Más parámetros ≠ mejor detección"),
+                 ("5. Disponibilidad","¿Qué información satelital necesita Colombia?"),
+                 ("6. Confianza","¿En qué modelo confiar con datos escasos?")]
+        for paso,desc in pasos:
+            st.markdown(f'<div class="hall-box"><strong>{paso}</strong> — {desc}</div>', unsafe_allow_html=True)
+    with col_b:
         st.markdown("#### Modelos evaluados")
         resumen = pd.DataFrame({
-            'Modelo': todos_modelos,
-            'Tipo':   [MODELOS_TIPO[m] for m in todos_modelos],
-            'F1':     [MODELOS_F1[m] for m in todos_modelos],
-        }).sort_values('F1', ascending=False).reset_index(drop=True)
-        resumen['F1'] = resumen['F1'].map(lambda x: f"{x:.3f}")
+            'Modelo': TODOS, 'Tipo': [TIPO[m] for m in TODOS],
+            'F1-Score': [F1_VALS[m] for m in TODOS],
+        }).sort_values('F1-Score',ascending=False).reset_index(drop=True)
         st.dataframe(resumen, use_container_width=True, hide_index=True)
-        st.caption("Usa el panel lateral para filtrar modelos y ajustar el umbral F1.")
 
-# ══════════════════════════════════════════════════════════════════
-# SECCIÓN 2 — EXPLORACIÓN
-# ══════════════════════════════════════════════════════════════════
+# ──────────────────────────────────────────────────────────────────
+# SECCIÓN: EXPLORACIÓN
+# ──────────────────────────────────────────────────────────────────
 elif seccion == "Exploración":
     st.markdown("# Fase Exploratoria — ¿Dónde estamos?")
-    st.markdown("Cinco hallazgos sin hipótesis previas. Los datos tal como son.")
+    st.caption("Pasa el cursor sobre las gráficas para ver los valores exactos · Haz clic en la leyenda para mostrar/ocultar series · Arrastra para hacer zoom")
     st.markdown("---")
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "H1 · F1 por modelo",
-        "H2 · Precisión vs Cobertura",
-        "H3 · Canales satelitales",
-        "H4 · Brecha de señal",
-        "H5 · Variabilidad folds",
+    tab1,tab2,tab3,tab4,tab5 = st.tabs([
+        "H1 · F1 por modelo","H2 · Precisión vs Cobertura",
+        "H3 · Canales satelitales","H4 · Brecha de señal","H5 · Variabilidad folds",
     ])
+    modelos_vis = [m for m in TODOS if m in sel]
 
-    # ── H1 ───────────────────────────────────────────────────────
     with tab1:
-        st.markdown("### ¿Qué tan bien detecta cada modelo un deslizamiento?")
-        st.markdown('<div class="hallazgo-box">Métrica: <strong>F1-Score</strong> — equilibrio entre detectar los que sí ocurren y no generar falsas alarmas.</div>', unsafe_allow_html=True)
-
-        if not modelos_vis:
-            st.warning("Selecciona al menos un modelo en el panel lateral.")
+        st.markdown("**¿Qué tan bien detecta cada modelo un deslizamiento?**")
+        if modelos_vis:
+            st.plotly_chart(fig_f1_barras(modelos_vis, umbral), use_container_width=True)
         else:
-            orden = sorted(range(len(modelos_vis)), key=lambda i: f1_vis[i])
-            m_ord = [modelos_vis[i] for i in orden]
-            f_ord = [f1_vis[i] for i in orden]
-            cols_bar = [C['red'] if m == 'RF' else (C['clasico'] if MODELOS_TIPO[m]=='Clásico' else C['gray']) for m in m_ord]
+            st.warning("Selecciona al menos un modelo.")
 
-            mpl_defaults()
-            fig, ax = plt.subplots(figsize=(9, max(3, len(m_ord)*0.7)))
-            bars = ax.barh(m_ord, f_ord, color=cols_bar, height=0.55, zorder=3)
-            ax.axvline(umbral_f1, color=C['dark'], lw=1.4, ls='--', zorder=2)
-            ax.text(umbral_f1+0.002, len(m_ord)-0.4, f'F1={umbral_f1:.2f}', fontsize=9, color=C['dark'])
-            for bar, val in zip(bars, f_ord):
-                ax.text(val+0.004, bar.get_y()+bar.get_height()/2, f'{val:.3f}', va='center', fontsize=10)
-            ax.set_xlim(0, 0.95); ax.set_xlabel('F1-Score'); ax.set_ylabel('Modelo')
-            ax.set_title('F1-Score por Modelo — Detección de Deslizamientos', fontsize=13)
-            ax.spines['left'].set_visible(False); ax.tick_params(axis='y', length=0)
-            leg = [mpatches.Patch(color=C['gray'], label='Deep Learning'),
-                   mpatches.Patch(color=C['clasico'], label='Modelos clásicos'),
-                   mpatches.Patch(color=C['red'], label='Mejor resultado')]
-            ax.legend(handles=leg, loc='lower right', fontsize=9, frameon=False)
-            plt.tight_layout()
-            st.pyplot(fig, use_container_width=True)
-            plt.close(fig)
-
-    # ── H2 ───────────────────────────────────────────────────────
     with tab2:
-        st.markdown("### ¿Precisión o cobertura? ¿Podemos tener los dos?")
-        st.markdown('<div class="hallazgo-box">En detección de desastres, <strong>fallar en detectar uno real</strong> suele ser más costoso que una falsa alarma.</div>', unsafe_allow_html=True)
+        st.markdown("**¿Precisión o cobertura? ¿Podemos tener los dos?**")
+        st.plotly_chart(fig_pr_scatter(modelos_vis, mostrar_lit, umbral), use_container_width=True)
 
-        datos_pr = {'LR':(0.7971,0.7806),'SVM':(0.8193,0.7777),'RF':(0.7439,0.9569),'ResNet-50':(0.7219,0.8771)}
-        lit_pr = [
-            ('Ghorbanzadeh et al. (2022)', 0.717, '#FECACA'),
-            ('Lv et al. — L4S (2022)',     0.739, '#F87171'),
-            ('Liu et al. (2024)',           0.760, '#EF4444'),
-            ('Enhanced U-Net++ (2025)',     0.841, '#B91C1C'),
-        ]
-        pr_vis = {k:v for k,v in datos_pr.items() if k in sel_modelos}
-
-        mpl_defaults()
-        fig, ax = plt.subplots(figsize=(7.5, 6))
-        r_arr = np.linspace(0.62, 0.999, 400)
-        if mostrar_lit:
-            for nombre, f1v, cl in lit_pr:
-                p_arr = f1v * r_arr / (2*r_arr - f1v)
-                mask = (p_arr > 0) & (p_arr <= 1.0)
-                ax.plot(r_arr[mask], p_arr[mask], color=cl, lw=1.2, ls='--', zorder=1)
-                vr, vp = r_arr[mask], p_arr[mask]
-                if len(vr):
-                    ax.text(vr[0]+0.003, vp[0]+0.005, nombre, fontsize=7.5, color=cl, ha='left', va='bottom', clip_on=True)
-        for nm, (prec, rec) in pr_vis.items():
-            ax.scatter(rec, prec, s=120, color=color_modelo(nm), zorder=5, edgecolors='white', lw=1.5)
-            off = {'LR':(-0.014,0.012),'SVM':(0.005,0.012),'RF':(0.005,-0.022),'ResNet-50':(0.005,0.012)}
-            dx,dy = off.get(nm,(0.005,0.012))
-            ax.text(rec+dx, prec+dy, nm, fontsize=9.5, color=color_modelo(nm), fontweight='bold')
-        ax.set_xlim(0.62,1.02); ax.set_ylim(0.62,0.90)
-        ax.set_xlabel('Cobertura (Recall)'); ax.set_ylabel('Precisión')
-        ax.set_title('Precisión vs Cobertura por Modelo', fontsize=13)
-        if mostrar_lit:
-            ax.plot([],[],color='#EF4444',ls='--',lw=1,label='Benchmarks literatura (ISO-F1)')
-            ax.legend(fontsize=8.5, frameon=False, loc='upper left')
-        plt.tight_layout(); st.pyplot(fig, use_container_width=True); plt.close(fig)
-
-    # ── H3 ───────────────────────────────────────────────────────
     with tab3:
-        st.markdown("### ¿Qué información satelital separa mejor las clases?")
-        st.markdown('<div class="hallazgo-box">Δ = diferencia entre el valor medio de reflectancia en zonas <strong>con</strong> y <strong>sin</strong> deslizamiento.</div>', unsafe_allow_html=True)
+        st.markdown("**¿Qué información satelital separa mejor las clases?**")
+        st.plotly_chart(fig_canales(), use_container_width=True)
 
-        canales = [
-            ('S2-B7 RedEdge3',0.8073,'RedEdge'),('S2-B6 RedEdge2',0.5625,'RedEdge'),
-            ('ALOS DEM',0.1954,'Topo'),('S1-VH SAR',0.1882,'SAR'),
-            ('DEM Slope',0.0430,'Topo'),('S2-B8A NIR-A',0.0221,'Optico'),
-        ]
-        mpl_defaults()
-        fig, ax = plt.subplots(figsize=(9, 4))
-        UMBRAL = 0.12
-        bars = ax.barh([c[0] for c in canales],[c[1] for c in canales],
-                       color=[C[c[2]] for c in canales], height=0.55, zorder=3)
-        for bar, (nm, val, grp) in zip(bars, canales):
-            bw = bar.get_width()
-            y_mid = bar.get_y()+bar.get_height()/2
-            if bw >= UMBRAL:
-                ax.text(bw+0.008, y_mid, f'{val:.3f}', va='center', fontsize=10)
-            else:
-                ax.text(bw+0.018, y_mid, f'{val:.3f}', va='center', fontsize=9.5,
-                        bbox=dict(boxstyle='round,pad=0.2',facecolor='#F9FAFB',edgecolor=C[grp],alpha=0.9,linewidth=0.8))
-        ax.set_xlim(0,0.95); ax.set_xlabel('Brecha de señal (Δ)'); ax.set_ylabel('Canal satelital')
-        ax.set_title('Canales Satelitales más Discriminativos', fontsize=13)
-        leg = [mpatches.Patch(color=C['RedEdge'],label='Banda RedEdge (S2)'),
-               mpatches.Patch(color=C['Topo'],label='Topografía'),
-               mpatches.Patch(color=C['SAR'],label='Radar SAR (S1)'),
-               mpatches.Patch(color=C['Optico'],label='Óptico NIR')]
-        ax.legend(handles=leg,loc='upper right',fontsize=9,frameon=True,framealpha=0.95,edgecolor='#E5E7EB')
-        ax.spines['left'].set_visible(False); ax.tick_params(axis='y',length=0)
-        plt.tight_layout(); st.pyplot(fig, use_container_width=True); plt.close(fig)
-
-    # ── H4 ───────────────────────────────────────────────────────
     with tab4:
-        st.markdown("### ¿Cómo se diferencian las clases en los canales clave?")
-        st.markdown('<div class="hallazgo-box">Cada canal muestra el valor medio de reflectancia en zonas <strong>con</strong> deslizamiento (sólido) y <strong>sin</strong> él (hueco). La distancia entre ambos es la brecha Δ.</div>', unsafe_allow_html=True)
+        st.markdown("**¿Cómo se diferencian las clases en los canales clave?**")
+        st.plotly_chart(fig_dot_plot(), use_container_width=True)
 
-        dot_data = [
-            ('S2-B7 RedEdge3',2.0209,1.2136,'RedEdge'),('S2-B6 RedEdge2',1.4782,0.9157,'RedEdge'),
-            ('ALOS DEM',1.2739,1.0786,'Topo'),('S1-VH SAR',1.2488,1.0606,'SAR'),
-            ('S2-B8A NIR-A',1.0397,1.0176,'Optico'),('DEM Slope',1.0703,1.0274,'Topo'),
-        ]
-        mpl_defaults()
-        fig, ax = plt.subplots(figsize=(9,4.5))
-        for i,(nm,pos,neg,grp) in enumerate(dot_data):
-            col = C[grp]
-            ax.plot([neg,pos],[i,i],color='#D1D5DB',lw=1.8,zorder=2)
-            ax.scatter(pos,i,s=90,color=col,zorder=4)
-            ax.scatter(neg,i,s=90,color='white',zorder=4,edgecolors=col,linewidths=1.8)
-            ax.text(max(pos,neg)+0.04,i,f'Δ={pos-neg:.2f}',va='center',fontsize=9,color='#6B7280')
-        ax.set_yticks(range(len(dot_data))); ax.set_yticklabels([d[0] for d in dot_data])
-        ax.set_xlim(0.8,2.5); ax.set_xlabel('Reflectancia media normalizada'); ax.set_ylabel('Canal satelital')
-        ax.set_title('Brecha de Señal entre Clases — Top 6 Canales\n(sólido = con deslizamiento · hueco = sin deslizamiento)', fontsize=11)
-        leg = [mpatches.Patch(color=C['RedEdge'],label='RedEdge (S2)'),
-               mpatches.Patch(color=C['Topo'],label='Topografía'),
-               mpatches.Patch(color=C['SAR'],label='SAR (S1)'),
-               mpatches.Patch(color=C['Optico'],label='Óptico NIR'),
-               Line2D([0],[0],marker='o',color='w',markerfacecolor='#555',markersize=9,label='Con deslizamiento'),
-               Line2D([0],[0],marker='o',color='w',markerfacecolor='white',markeredgecolor='#555',markeredgewidth=1.5,markersize=9,label='Sin deslizamiento')]
-        ax.legend(handles=leg,loc='upper right',fontsize=8.5,frameon=True,framealpha=0.6,edgecolor='#E5E7EB',ncol=2)
-        ax.spines['left'].set_visible(False); ax.tick_params(axis='y',length=0)
-        plt.tight_layout(); st.pyplot(fig, use_container_width=True); plt.close(fig)
-
-    # ── H5 ───────────────────────────────────────────────────────
     with tab5:
-        st.markdown("### ¿El rendimiento es estable entre experimentos?")
-        st.markdown('<div class="hallazgo-box">Cada punto es el resultado en uno de los 5 subconjuntos de prueba. Un modelo inconsistente puede fallar en condiciones no vistas.</div>', unsafe_allow_html=True)
+        st.markdown("**¿El rendimiento es estable entre experimentos?**")
+        folds_vis = {k:v for k,v in fold_data.items() if any(k.startswith(m.split()[0]) for m in sel)} or fold_data
+        st.plotly_chart(fig_folds(folds_vis, umbral), use_container_width=True)
 
-        folds_vis = {k:v for k,v in fold_data.items() if any(k.startswith(m.split()[0]) for m in sel_modelos)}
-        if not folds_vis:
-            folds_vis = fold_data
-
-        medias = {k:np.mean(v) for k,v in folds_vis.items()}
-        orden_f = sorted(folds_vis.keys(), key=lambda k: medias[k], reverse=True)
-
-        mpl_defaults()
-        fig, ax = plt.subplots(figsize=(9, max(4, len(orden_f)*0.9)))
-        col_f = [C['red'] if 'RF' in m else '#9CA3AF' for m in orden_f]
-        bp = ax.boxplot([folds_vis[m] for m in orden_f], vert=False, patch_artist=True,
-                        widths=0.45, showfliers=False,
-                        medianprops=dict(color='white',lw=2),
-                        whiskerprops=dict(color='#9CA3AF'),
-                        capprops=dict(color='#9CA3AF'),
-                        boxprops=dict(linewidth=0))
-        for patch, col in zip(bp['boxes'], col_f):
-            patch.set_facecolor(col); patch.set_alpha(0.75)
-        rng = np.random.default_rng(42)
-        for i,(m,col) in enumerate(zip(orden_f,col_f),start=1):
-            vals = folds_vis[m]
-            jitter = rng.uniform(-0.12,0.12,len(vals))
-            ax.scatter(vals,[i+j for j in jitter],color=col,s=50,zorder=5,alpha=0.9)
-            ax.text(np.mean(vals)+0.003,i+0.28,f'x̄={np.mean(vals):.3f}  Std={np.std(vals,ddof=1):.3f}',fontsize=8.5,color=col,va='bottom')
-        ax.axvline(umbral_f1,color=C['dark'],lw=1.2,ls='--',zorder=2)
-        ax.text(umbral_f1+0.001,0.55,f'F1={umbral_f1:.2f}',fontsize=8.5,color=C['dark'])
-        ax.set_yticks(range(1,len(orden_f)+1)); ax.set_yticklabels(orden_f)
-        ax.set_xlabel('F1-Score por fold'); ax.set_ylabel('Modelo')
-        ax.set_title('Consistencia entre Experimentos — 5 Folds por Modelo', fontsize=13)
-        ax.spines['left'].set_visible(False); ax.tick_params(axis='y',length=0)
-        plt.tight_layout(); st.pyplot(fig, use_container_width=True); plt.close(fig)
-
-# ══════════════════════════════════════════════════════════════════
-# SECCIÓN 3 — ARGUMENTO
-# ══════════════════════════════════════════════════════════════════
+# ──────────────────────────────────────────────────────────────────
+# SECCIÓN: ARGUMENTO
+# ──────────────────────────────────────────────────────────────────
 elif seccion == "Argumento":
     st.markdown("# Fase Aclaratoria — Del hallazgo al argumento")
-    st.markdown("Las mismas preguntas, ahora respondidas con contexto colombiano.")
-    st.markdown('<div class="argumento-box">Problema Colombia → ¿qué modelo responde?</div>', unsafe_allow_html=True)
+    st.caption("Pasa el cursor sobre los elementos para ver valores · Clic en leyenda para aislar series")
+    st.markdown('<div class="arg-box">Hilo conductor: <strong>Problema Colombia → ¿qué modelo responde?</strong></div>', unsafe_allow_html=True)
     st.markdown("---")
 
-    tab_a1, tab_a2, tab_a3, tab_a4, tab_a5 = st.tabs([
-        "A1 · La trampa metodológica",
-        "A2 · Colombia vs mundo",
-        "A3 · Complejidad ≠ rendimiento",
-        "A4 · Qué necesita Colombia",
-        "A5 · Confianza con pocos datos",
+    taba1,taba2,taba3,taba4,taba5 = st.tabs([
+        "A1 · La trampa metodológica","A2 · Colombia vs mundo",
+        "A3 · Complejidad ≠ rendimiento","A4 · Qué necesita Colombia","A5 · Confianza",
     ])
+    modelos_vis = [m for m in TODOS if m in sel]
+    m_cl = [m for m in ['LR','SVM','RF'] if m in sel]
+    m_dl = [m for m in ['ResNet-50','EfficientNet','U-Net'] if m in sel]
 
-    # ── A1 ───────────────────────────────────────────────────────
-    with tab_a1:
-        st.markdown("### El resultado cambia según cómo evalúes el modelo")
-        col_txt, col_fig = st.columns([1, 2])
-        with col_txt:
-            st.markdown('<div class="argumento-box">Si alguien en Colombia implementa un modelo y solo reporta el protocolo más favorable, puede <strong>sobrestimar el rendimiento real</strong> en condiciones locales.</div>', unsafe_allow_html=True)
-            st.markdown("**Dos protocolos:**")
-            st.markdown("- **14 bandas** del satélite (optimizado, n=1500)")
-            st.markdown("- **Características básicas** del terreno (comparable literatura, n=3799)")
-        with col_fig:
-            f1_opt  = {'LR':0.7886,'SVM':0.7974,'RF':0.8368}
-            f1_base = {'LR':0.7512,'SVM':0.7340,'RF':0.7891}
-            f1_dl   = {'ResNet-50':0.7840,'EfficientNet':0.7554,'U-Net':0.4443}
-            m_cl = [m for m in ['LR','SVM','RF'] if m in sel_modelos]
-            m_dl = [m for m in ['ResNet-50','EfficientNet','U-Net'] if m in sel_modelos]
+    with taba1:
+        cc1,cc2 = st.columns([1,2])
+        with cc1:
+            st.markdown("### El resultado cambia según cómo evalúes el modelo")
+            st.markdown('<div class="arg-box">Si se reporta solo el protocolo más favorable, se puede <strong>sobrestimar el rendimiento</strong> en condiciones locales.</div>', unsafe_allow_html=True)
+            st.markdown("**14 bandas:** protocolo optimizado, n=1500")
+            st.markdown("**Básicas:** comparable a literatura, n=3799")
+        with cc2:
+            st.plotly_chart(fig_protocolos(m_cl, m_dl, umbral), use_container_width=True)
 
-            mpl_defaults()
-            fig, ax = plt.subplots(figsize=(9,5))
-            x = np.arange(len(m_cl)); ancho = 0.32
-            x_dl = np.arange(len(m_cl), len(m_cl)+len(m_dl))
-            if m_dl:
-                ax.bar(x_dl,[f1_dl[m] for m in m_dl],width=ancho*1.9,color='#E5E7EB',zorder=3)
-                for xi,m in zip(x_dl,m_dl):
-                    ax.text(xi,f1_dl[m]+0.008,f'{f1_dl[m]:.3f}',ha='center',fontsize=9.5,color='#9CA3AF')
-            if m_cl:
-                b1=ax.bar(x-ancho/2,[f1_opt[m] for m in m_cl],width=ancho,color=C['blue_dark'],zorder=4)
-                b2=ax.bar(x+ancho/2,[f1_base[m] for m in m_cl],width=ancho,color=C['blue_light'],zorder=4)
-                for bar,m in zip(b1,m_cl):
-                    ax.text(bar.get_x()+bar.get_width()/2,f1_opt[m]+0.008,f'{f1_opt[m]:.3f}',ha='center',fontsize=9.5,color=C['blue_dark'],fontweight='bold')
-                for bar,m in zip(b2,m_cl):
-                    ax.text(bar.get_x()+bar.get_width()/2,f1_base[m]+0.008,f'{f1_base[m]:.3f}',ha='center',fontsize=9.5,color=C['dark'])
-                if 'RF' in m_cl:
-                    ri = m_cl.index('RF')
-                    ax.annotate('',xy=(ri+ancho/2,f1_base['RF']+0.004),xytext=(ri-ancho/2,f1_opt['RF']+0.004),
-                                arrowprops=dict(arrowstyle='<->',color=C['red'],lw=2))
-                    ax.text(ri+0.04,(f1_opt['RF']+f1_base['RF'])/2+0.03,f'Δ={f1_opt["RF"]-f1_base["RF"]:.3f}',fontsize=9,color=C['red'],fontweight='bold')
-            ax.axhline(umbral_f1,color=C['dark'],lw=1.2,ls='--',zorder=2)
-            ax.set_xticks(list(x)+list(x_dl)); ax.set_xticklabels(m_cl+m_dl)
-            sep_x = len(m_cl)-0.5
-            ax.axvline(sep_x,color='#E5E7EB',lw=1.5)
-            if m_cl: ax.text(len(m_cl)/2-0.2,0.93,'Modelos clásicos',fontsize=8.5,color='#9CA3AF',ha='center')
-            if m_dl: ax.text(len(m_cl)+len(m_dl)/2-0.3,0.93,'Deep Learning',fontsize=8.5,color='#9CA3AF',ha='center')
-            ax.set_ylim(0.35,0.97); ax.set_ylabel('F1-Score')
-            ax.set_title('El protocolo de evaluación cambia el resultado',fontsize=11,pad=12)
-            leg=[mpatches.Patch(color=C['blue_dark'],label='14 bandas del satélite'),
-                 mpatches.Patch(color=C['blue_light'],label='Características básicas del terreno'),
-                 mpatches.Patch(color='#E5E7EB',label='Deep Learning')]
-            ax.legend(handles=leg,loc='upper right',fontsize=9,frameon=True,framealpha=0.95,edgecolor='#E5E7EB')
-            plt.tight_layout(); st.pyplot(fig,use_container_width=True); plt.close(fig)
+    with taba2:
+        cc1,cc2 = st.columns([1,2])
+        with cc1:
+            st.markdown("### ¿Dónde estamos frente a la literatura internacional?")
+            st.markdown('<div class="arg-box">Los modelos de referencia se entrenaron en Nepal, Perú e Italia. Colombia tiene <strong>terreno andino con régimen de lluvias diferente</strong> — y ningún dataset etiquetado.</div>', unsafe_allow_html=True)
+        with cc2:
+            st.plotly_chart(fig_pr_scatter(modelos_vis, mostrar_lit, umbral), use_container_width=True)
 
-    # ── A2 ───────────────────────────────────────────────────────
-    with tab_a2:
-        st.markdown("### ¿Dónde estamos frente a la literatura internacional?")
-        col_txt, col_fig = st.columns([1, 2])
-        with col_txt:
-            st.markdown('<div class="argumento-box">Colombia registra 400–600 deslizamientos por año. Los modelos de referencia se entrenaron en Nepal, Perú e Italia — terrenos con <strong>regímenes de lluvia y vegetación distintos</strong> a los Andes colombianos.</div>', unsafe_allow_html=True)
-            st.markdown("**Implicación:** Sin un dataset colombiano, cualquier modelo es una extrapolación.")
-        with col_fig:
-            datos_pr_a2={'LR':(0.7971,0.7806),'SVM':(0.8193,0.7777),'RF':(0.7439,0.9569),'ResNet-50':(0.7219,0.8771)}
-            lit_a2=[('Ghorbanzadeh et al. (2022)',0.717,'#FECACA'),('Lv et al. — L4S (2022)',0.739,'#F87171'),
-                    ('Liu et al. (2024)',0.760,'#EF4444'),('Enhanced U-Net++ (2025)',0.841,'#B91C1C')]
-            pr_vis_a2={k:v for k,v in datos_pr_a2.items() if k in sel_modelos}
-            mpl_defaults()
-            fig,ax=plt.subplots(figsize=(7.5,6))
-            r_arr=np.linspace(0.62,0.999,400)
-            if mostrar_lit:
-                for nombre,f1v,cl in lit_a2:
-                    p_arr=f1v*r_arr/(2*r_arr-f1v); mask=(p_arr>0)&(p_arr<=1.0)
-                    ax.plot(r_arr[mask],p_arr[mask],color=cl,lw=1.3,ls='--',zorder=1)
-                    vr,vp=r_arr[mask],p_arr[mask]
-                    if len(vr): ax.text(vr[0]+0.003,vp[0]+0.005,nombre,fontsize=7.5,color=cl,ha='left',va='bottom',clip_on=True)
-            for nm,(prec,rec) in pr_vis_a2.items():
-                mk='D' if MODELOS_TIPO.get(nm)=='DL' else 'o'
-                ax.scatter(rec,prec,s=130,color=color_modelo(nm),zorder=6,edgecolors='white',lw=1.5,marker=mk)
-                off={'LR':(-0.016,0.013),'SVM':(0.006,0.013),'RF':(0.006,-0.024),'ResNet-50':(0.006,0.013)}
-                dx,dy=off.get(nm,(0.006,0.013))
-                ax.text(rec+dx,prec+dy,nm,fontsize=9.5,color=color_modelo(nm),fontweight='bold')
-            ax.axhspan(0.58,0.645,alpha=0.07,color='#FCD34D',zorder=1)
-            ax.text(0.635,0.592,'Sin datos colombianos — zona de incertidumbre',fontsize=7.5,color='#92400E',style='italic')
-            ax.set_xlim(0.62,1.02); ax.set_ylim(0.58,0.90)
-            ax.set_xlabel('Cobertura (Recall)'); ax.set_ylabel('Precisión')
-            ax.set_title('Comparación con benchmarks internacionales',fontsize=11)
-            leg_a2=[Line2D([0],[0],marker='o',color='w',markerfacecolor=C['clasico'],markersize=10,label='Modelos clásicos'),
-                    Line2D([0],[0],marker='D',color='w',markerfacecolor=C['dark'],markersize=9,label='Deep Learning'),
-                    Line2D([0],[0],marker='o',color='w',markerfacecolor=C['red'],markersize=10,label='RF — mejor F1')]
-            if mostrar_lit: leg_a2.append(Line2D([0],[0],color='#EF4444',ls='--',lw=1.5,label='Literatura (ISO-F1)'))
-            ax.legend(handles=leg_a2,loc='upper left',fontsize=8.5,frameon=True,framealpha=0.95,edgecolor='#E5E7EB')
-            plt.tight_layout(); st.pyplot(fig,use_container_width=True); plt.close(fig)
+    with taba3:
+        cc1,cc2 = st.columns([1,2])
+        with cc1:
+            st.markdown("### Complejidad del modelo vs. resultado real")
+            st.markdown('<div class="arg-box"><strong>La objeción más común:</strong> "Los modelos profundos siempre son mejores."<br>U-Net — la más compleja — tiene el <strong>peor F1</strong>.</div>', unsafe_allow_html=True)
+        with cc2:
+            st.plotly_chart(fig_complejidad(modelos_vis, umbral), use_container_width=True)
 
-    # ── A3 ───────────────────────────────────────────────────────
-    with tab_a3:
-        st.markdown("### Complejidad del modelo vs. resultado real")
-        col_txt, col_fig = st.columns([1, 2])
-        with col_txt:
-            st.markdown('<div class="argumento-box"><strong>La objeción más común:</strong> "Los modelos profundos siempre son mejores."<br><br>Los datos muestran lo contrario. U-Net — la arquitectura más compleja — tiene el <strong>peor F1</strong>.</div>', unsafe_allow_html=True)
-            st.markdown("**¿Por qué?** Tamaño del dataset, disponibilidad de bandas, y características del terreno.")
-        with col_fig:
-            m_a3=[m for m in ['U-Net','EfficientNet','ResNet-50','LR','SVM','RF'] if m in sel_modelos]
-            f_a3=[MODELOS_F1[m] for m in m_a3]
-            comp={'LR':'Baja','SVM':'Media','RF':'Media','ResNet-50':'Alta','EfficientNet':'Alta','U-Net':'Alta'}
-            col_a3=[C['red'] if m=='RF' else (C['dl'] if MODELOS_TIPO[m]=='DL' else C['clasico']) for m in m_a3]
-            mpl_defaults()
-            fig,ax=plt.subplots(figsize=(9,max(3.5,len(m_a3)*0.75)))
-            bars=ax.barh(m_a3,f_a3,color=col_a3,height=0.55,zorder=3)
-            for bar,m in zip(bars,m_a3):
-                ax.text(min(bar.get_width()*0.05,0.04),bar.get_y()+bar.get_height()/2,
-                        f'Complejidad: {comp[m]}',va='center',fontsize=8.5,color='white',fontweight='bold')
-            for bar,val in zip(bars,f_a3):
-                ax.text(val+0.005,bar.get_y()+bar.get_height()/2,f'{val:.3f}',va='center',fontsize=10)
-            ax.axvline(umbral_f1,color=C['dark'],lw=1.2,ls='--',zorder=2)
-            ax.text(umbral_f1+0.002,len(m_a3)-0.4,f'F1={umbral_f1:.2f}',fontsize=8.5,color=C['dark'])
-            ax.set_xlim(0,0.97); ax.set_xlabel('F1-Score'); ax.set_ylabel('Modelo')
-            ax.set_title('Complejidad del modelo vs. resultado real\nMás parámetros no garantizan mejor detección',fontsize=11)
-            leg=[mpatches.Patch(color=C['dl'],label='Deep Learning'),
-                 mpatches.Patch(color=C['clasico'],label='Modelos clásicos'),
-                 mpatches.Patch(color=C['red'],label='Mejor resultado')]
-            ax.legend(handles=leg,loc='lower right',fontsize=9,frameon=False)
-            ax.spines['left'].set_visible(False); ax.tick_params(axis='y',length=0)
-            plt.tight_layout(); st.pyplot(fig,use_container_width=True); plt.close(fig)
+    with taba4:
+        cc1,cc2 = st.columns([1,2])
+        with cc1:
+            st.markdown("### ¿Qué información satelital necesita Colombia?")
+            st.markdown('<div class="arg-box">Las bandas <strong>RedEdge</strong> (Sentinel-2) son las más discriminativas y están disponibles gratuitamente.<br>El desafío: <strong>etiquetas post-evento</strong>.</div>', unsafe_allow_html=True)
+        with cc2:
+            st.plotly_chart(fig_canales_colombia(), use_container_width=True)
 
-    # ── A4 ───────────────────────────────────────────────────────
-    with tab_a4:
-        st.markdown("### ¿Qué información satelital necesita Colombia?")
-        col_txt, col_fig = st.columns([1, 2])
-        with col_txt:
-            st.markdown('<div class="argumento-box">Las bandas <strong>RedEdge</strong> son las más discriminativas — y están disponibles en Sentinel-2, con cobertura nacional gratuita.<br><br>El desafío no es el satélite: <strong>es tener imágenes etiquetadas post-evento.</strong></div>', unsafe_allow_html=True)
-        with col_fig:
-            canales_a4=[
-                ('S2-B7 RedEdge3',0.8073,'RedEdge',True),('S2-B6 RedEdge2',0.5625,'RedEdge',True),
-                ('ALOS DEM',0.1954,'Topo',False),('S1-VH SAR',0.1882,'SAR',True),
-                ('DEM Slope',0.0430,'Topo',False),('S2-B8A NIR-A',0.0221,'Optico',True),
-            ]
-            UMBRAL2=0.12
-            mpl_defaults()
-            fig,ax=plt.subplots(figsize=(9.5,4.2))
-            bars=ax.barh([c[0] for c in canales_a4],[c[1] for c in canales_a4],
-                         color=[C[c[2]] for c in canales_a4],height=0.55,zorder=3)
-            for bar,(nm,val,grp,disp) in zip(bars,canales_a4):
-                bw=bar.get_width(); y_mid=bar.get_y()+bar.get_height()/2
-                estado='Copernicus' if disp else 'DEM externo'
-                col_e='#16A34A' if disp else '#B45309'
-                if bw>=UMBRAL2:
-                    ax.text(0.008,y_mid,estado,va='center',fontsize=8,color='white',fontweight='bold')
-                    ax.text(bw+0.012,y_mid,f'{val:.3f}',va='center',fontsize=10)
-                else:
-                    ax.text(bw+0.055,y_mid,estado,va='center',fontsize=7.5,color=col_e,fontweight='bold',
-                            bbox=dict(boxstyle='round,pad=0.2',facecolor='#F9FAFB',edgecolor=col_e,alpha=0.9,linewidth=0.8))
-                    ax.text(bw+0.18,y_mid,f'{val:.3f}',va='center',fontsize=9.5)
-            ax.set_xlim(0,0.97); ax.set_xlabel('Brecha de señal (Δ)'); ax.set_ylabel('Canal satelital')
-            ax.set_title('Canales más discriminativos y su disponibilidad para Colombia',fontsize=11)
-            leg=[mpatches.Patch(color=C['RedEdge'],label='Banda RedEdge (S2)'),
-                 mpatches.Patch(color=C['Topo'],label='Topografía'),
-                 mpatches.Patch(color=C['SAR'],label='Radar SAR (S1)'),
-                 mpatches.Patch(color=C['Optico'],label='Óptico NIR')]
-            ax.legend(handles=leg,loc='upper right',fontsize=8.5,frameon=True,framealpha=0.95,edgecolor='#E5E7EB')
-            ax.spines['left'].set_visible(False); ax.tick_params(axis='y',length=0)
-            plt.tight_layout(); st.pyplot(fig,use_container_width=True); plt.close(fig)
-
-    # ── A5 ───────────────────────────────────────────────────────
-    with tab_a5:
-        st.markdown("### ¿En cuál modelo confiar con datos escasos?")
-        col_txt, col_fig = st.columns([1, 2])
-        with col_txt:
-            st.markdown('<div class="argumento-box">En Colombia, los datos serán escasos y de un solo evento. La <strong>consistencia entre folds</strong> es el indicador más importante — no la media más alta.</div>', unsafe_allow_html=True)
+    with taba5:
+        cc1,cc2 = st.columns([1,2])
+        with cc1:
+            st.markdown("### ¿En cuál modelo confiar con datos escasos?")
+            st.markdown('<div class="arg-box">La <strong>consistencia entre folds</strong> es el indicador más importante cuando los datos son pocos y de un solo evento.</div>', unsafe_allow_html=True)
             st.markdown("**RF:** Std=0.008 — el más consistente")
             st.markdown("**SVM:** Std=0.033 — mayor variabilidad")
-        with col_fig:
-            folds_a5={k:v for k,v in fold_data.items() if any(k.startswith(m.split()[0]) for m in sel_modelos)} or fold_data
-            medias_a5={k:np.mean(v) for k,v in folds_a5.items()}
-            stds_a5={k:np.std(v,ddof=1) for k,v in folds_a5.items()}
-            orden_a5=sorted(folds_a5.keys(),key=lambda k:medias_a5[k],reverse=True)
-            col_a5=[C['red'] if 'RF' in m else '#9CA3AF' for m in orden_a5]
-            mpl_defaults()
-            fig,ax=plt.subplots(figsize=(9,max(4,len(orden_a5)*0.9)))
-            bp=ax.boxplot([folds_a5[m] for m in orden_a5],vert=False,patch_artist=True,
-                          widths=0.45,showfliers=False,
-                          medianprops=dict(color='white',lw=2),
-                          whiskerprops=dict(color='#9CA3AF'),capprops=dict(color='#9CA3AF'),
-                          boxprops=dict(linewidth=0))
-            for patch,col in zip(bp['boxes'],col_a5):
-                patch.set_facecolor(col); patch.set_alpha(0.75)
-            rng=np.random.default_rng(42)
-            for i,(m,col) in enumerate(zip(orden_a5,col_a5),start=1):
-                vals=folds_a5[m]; jitter=rng.uniform(-0.12,0.12,len(vals))
-                ax.scatter(vals,[i+j for j in jitter],color=col,s=50,zorder=5,alpha=0.9)
-                ax.text(np.mean(vals)+0.003,i+0.28,f'x̄={medias_a5[m]:.3f}  Std={stds_a5[m]:.3f}',fontsize=8.5,color=col,va='bottom')
-            ax.axvline(umbral_f1,color=C['dark'],lw=1.2,ls='--',zorder=2)
-            ax.text(umbral_f1+0.001,0.55,f'F1={umbral_f1:.2f}',fontsize=8.5,color=C['dark'])
-            rf_idx=next((i for i,m in enumerate(orden_a5) if 'RF' in m),None)
-            if rf_idx is not None:
-                rf_pos=rf_idx+1
-                ax.annotate('Dispersión más pequeña\n→ más confiable con datos nuevos',
-                            xy=(np.mean(folds_a5[orden_a5[rf_idx]]),rf_pos),
-                            xytext=(0.695,rf_pos+1.4),
-                            arrowprops=dict(arrowstyle='->',color=C['red'],lw=1.5),
-                            fontsize=8.5,color=C['red'],
-                            bbox=dict(boxstyle='round,pad=0.3',facecolor='white',edgecolor=C['red'],alpha=0.9))
-            ax.set_yticks(range(1,len(orden_a5)+1)); ax.set_yticklabels(orden_a5)
-            ax.set_xlabel('F1-Score por fold'); ax.set_ylabel('Modelo')
-            ax.set_title('Consistencia del modelo como indicador de confianza',fontsize=13)
-            ax.spines['left'].set_visible(False); ax.tick_params(axis='y',length=0)
-            plt.tight_layout(); st.pyplot(fig,use_container_width=True); plt.close(fig)
+        with cc2:
+            folds_a5 = {k:v for k,v in fold_data.items() if any(k.startswith(m.split()[0]) for m in sel)} or fold_data
+            st.plotly_chart(fig_consistencia(folds_a5, umbral), use_container_width=True)
 
-# ══════════════════════════════════════════════════════════════════
-# SECCIÓN 4 — CONCLUSIÓN
-# ══════════════════════════════════════════════════════════════════
+# ──────────────────────────────────────────────────────────────────
+# SECCIÓN: CONCLUSIÓN
+# ──────────────────────────────────────────────────────────────────
 elif seccion == "Conclusión":
     st.markdown("# Conclusión — Lo que necesita Colombia")
-    st.markdown('<div class="argumento-box" style="font-size:1.05rem">La arquitectura viene después del contexto. Random Forest — interpretable y eficiente con pocos datos — es un punto de partida más sólido que redes profundas diseñadas para miles de imágenes segmentadas.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="arg-box" style="font-size:1.05rem">La arquitectura viene después del contexto. Random Forest — interpretable y eficiente con pocos datos — es un punto de partida más sólido que redes profundas diseñadas para miles de imágenes segmentadas.</div>', unsafe_allow_html=True)
     st.markdown("---")
 
-    col1, col2 = st.columns(2)
+    col1,col2 = st.columns(2)
     with col1:
         st.markdown("### Síntesis de hallazgos")
         tabla = pd.DataFrame({
-            'Hallazgo': ['F1 por modelo','Precisión vs Cobertura','Canales satelitales',
-                         'Brecha de señal','Variabilidad folds'],
-            'Observación': [
-                'RF supera F1=0.80; U-Net queda muy por debajo',
-                'RF prioriza cobertura (Recall=0.96)',
-                'Bandas RedEdge dominan la discriminación',
-                'RedEdge3 tiene brecha 4× mayor que SAR-VH',
-                'RF es el más consistente (Std=0.008)',
-            ],
+            'Hallazgo': ['F1 por modelo','Precisión vs Cobertura','Canales satelitales','Brecha de señal','Variabilidad folds'],
+            'Observación': ['RF supera F1=0.80; U-Net queda muy por debajo','RF prioriza cobertura (Recall=0.96)',
+                            'Bandas RedEdge dominan la discriminación','RedEdge3 tiene brecha 4× mayor que SAR-VH','RF es el más consistente (Std=0.008)'],
         })
         st.dataframe(tabla, use_container_width=True, hide_index=True)
-
-        st.markdown("### Tabla comparativa completa")
-        df_show = df.copy()
-        df_show['F1 medio'] = df_show['F1 medio'].map(lambda x: f'{x:.4f}' if pd.notna(x) else '—')
-        df_show['Recall']   = df_show['Recall'].map(lambda x: f'{x:.4f}' if pd.notna(x) else '—')
-        df_show['Precisión']= df_show['Precisión'].map(lambda x: f'{x:.4f}' if pd.notna(x) else '—')
-        st.dataframe(df_show[['Modelo','Tipo','F1 medio','Precisión','Recall']], use_container_width=True, hide_index=True)
+        st.markdown("### Tabla comparativa")
+        df_s = df.copy()
+        for c in ['F1 medio','Precisión','Recall']:
+            df_s[c] = df_s[c].map(lambda x: f'{x:.4f}' if pd.notna(x) else '—')
+        st.dataframe(df_s[['Modelo','Tipo','F1 medio','Precisión','Recall']], use_container_width=True, hide_index=True)
 
     with col2:
         st.markdown("### Condiciones para Colombia")
-        condiciones = [
-            ("Dataset etiquetado nacional", "No existe", "#FEE2E2", "#DC2626",
-             "Sin esto, cualquier modelo es una extrapolación"),
-            ("Bandas satelitales disponibles", "Sentinel-2 disponible (RedEdge incluido)", "#DCFCE7", "#16A34A",
-             "La señal está — faltan etiquetas post-evento"),
-            ("Protocolo de evaluación honesto", "Depende del estudio", "#FEF9C3", "#CA8A04",
-             "Usar 5 folds con protocolo comparable a literatura"),
-            ("Arquitectura apropiada", "RF como punto de partida", "#DCFCE7", "#16A34A",
-             "Interpretable, eficiente con pocos datos, robusto"),
-        ]
-        for cond, estado, bg, color, implicacion in condiciones:
-            st.markdown(f"""
-            <div style="background:{bg};border-left:4px solid {color};padding:10px 14px;
-                        border-radius:4px;margin-bottom:10px;">
-                <strong style="color:{color}">{cond}</strong><br>
-                <span style="color:#374151">Estado: {estado}</span><br>
-                <small style="color:#6B7280">{implicacion}</small>
-            </div>
-            """, unsafe_allow_html=True)
+        for cond,estado,bg,bcolor,impl in [
+            ("Dataset etiquetado nacional","No existe","#FEE2E2","#DC2626","Sin esto, cualquier modelo es extrapolación"),
+            ("Bandas satelitales","Sentinel-2 disponible (RedEdge)","#DCFCE7","#16A34A","La señal está — faltan etiquetas post-evento"),
+            ("Protocolo de evaluación","Depende del estudio","#FEF9C3","#CA8A04","Usar 5 folds, comparable a literatura"),
+            ("Arquitectura apropiada","RF como punto de partida","#DCFCE7","#16A34A","Interpretable, eficiente con pocos datos"),
+        ]:
+            st.markdown(f'<div style="background:{bg};border-left:4px solid {bcolor};padding:10px 14px;border-radius:4px;margin-bottom:9px"><strong style="color:{bcolor}">{cond}</strong><br><span style="color:#374151">{estado}</span><br><small style="color:#6B7280">{impl}</small></div>', unsafe_allow_html=True)
 
-        st.markdown("### Llamado a acción")
+        st.markdown("### Próximos pasos")
         st.markdown("""
-        Replicar este análisis en Colombia requiere tres pasos concretos:
-
-        1. **Etiquetar imágenes** de eventos históricos en el SGC (Servicio Geológico Colombiano)
-        2. **Descargar bandas RedEdge** de Sentinel-2 para las zonas afectadas (API Copernicus)
-        3. **Entrenar y evaluar** con 5 folds y protocolo comparable a literatura internacional
-
-        La arquitectura correcta emerge del contexto — no al revés.
+1. **Etiquetar** imágenes históricas del SGC (Servicio Geológico Colombiano)
+2. **Descargar** bandas RedEdge de Sentinel-2 via API Copernicus
+3. **Entrenar y evaluar** con 5 folds y protocolo comparable a literatura
         """)
-
     st.markdown("---")
-    st.caption("Datos: Landslide4Sense Dataset · Modelos entrenados en Google Colab · "
-               "Benchmarks: Ghorbanzadeh (2022), L4S Competition (2022), Liu et al. (2024), Enhanced U-Net++ (2025)")
+    st.caption("Datos: Landslide4Sense · Modelos: Google Colab · Benchmarks: Ghorbanzadeh (2022), L4S (2022), Liu et al. (2024), Enhanced U-Net++ (2025)")
