@@ -40,7 +40,7 @@ DATA_DIR   = os.path.join(SCRIPT_DIR, '..', 'data')
 @st.cache_data
 def load_data():
     df = pd.read_csv(os.path.join(DATA_DIR, 'comparison_table.csv'))
-    for col in ['F1 medio', 'Std', 'AUC-ROC', 'Precision', 'Recall', 'IoU']:
+    for col in ['F1 medio', 'Std', 'AUC-ROC', 'Precisión', 'Recall', 'IoU']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     FOLDS_FB = {
         'LR':             [0.7929, 0.7681, 0.8232, 0.7772, 0.7813],
@@ -599,10 +599,10 @@ elif seccion == "Conclusion":
 
         st.markdown("### Tabla comparativa")
         df_s = df.copy()
-        for col in ['F1 medio', 'Precision', 'Recall']:
+        for col in ['F1 medio', 'Precisión', 'Recall']:
             if col in df_s.columns:
                 df_s[col] = df_s[col].map(lambda x: '{:.4f}'.format(x) if pd.notna(x) else '—')
-        cols_show = [c for c in ['Modelo', 'Tipo', 'F1 medio', 'Precision', 'Recall'] if c in df_s.columns]
+        cols_show = [c for c in ['Modelo', 'Tipo', 'F1 medio', 'Precisión', 'Recall'] if c in df_s.columns]
         st.dataframe(df_s[cols_show], use_container_width=True, hide_index=True)
 
     with col2:
