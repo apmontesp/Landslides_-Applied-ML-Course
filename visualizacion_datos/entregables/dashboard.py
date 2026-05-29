@@ -1,6 +1,6 @@
 """
-Dashboard interactivo — Deteccion de Deslizamientos con Machine Learning en Colombia
-Visualizacion de Datos - Entregable Final - Plotly + Streamlit
+Dashboard interactivo — Detección de Deslizamientos con Machine Learning en Colombia
+Visualización de Datos - Entregable Final - Plotly + Streamlit
 """
 
 import os, json
@@ -105,8 +105,8 @@ def layout_base(title='', xlab='', ylab='', height=420):
 with st.sidebar:
     st.markdown("## Landslide ML - Colombia")
     st.markdown("---")
-    seccion = st.radio("Navegacion",
-                       ["Inicio", "Exploracion", "Argumento", "Conclusion"],
+    seccion = st.radio("Navegación",
+                       ["Inicio", "Exploración", "Argumento", "Conclusión"],
                        index=0)
     st.markdown("---")
     st.markdown("**Filtros globales**")
@@ -137,7 +137,7 @@ def fig_f1_barras(modelos, umbral_f1):
                   annotation_position='top right',
                   annotation_font_color=C['dark'])
     fig.update_layout(**layout_base(
-        title='F1-Score por Modelo — Deteccion de Deslizamientos',
+        title='F1-Score por Modelo — Detección de Deslizamientos',
         xlab='F1-Score (0 = no detecta nada - 1 = perfecto)',
         ylab='Modelo', height=max(350, len(orden) * 60)
     ))
@@ -164,7 +164,7 @@ def fig_pr_scatter(modelos_vis, mostrar_lit_flag, umbral_f1):
         for nombre, f1v, cl in lit:
             p_arr = f1v * r_arr / (2 * r_arr - f1v)
             mask  = (p_arr > 0) & (p_arr <= 1.0)
-            ht = '<b>{}</b><br>F1 reportado: {}<br>Recall: %{{x:.3f}}<br>Precision: %{{y:.3f}}<extra></extra>'.format(nombre, f1v)
+            ht = '<b>{}</b><br>F1 reportado: {}<br>Recall: %{{x:.3f}}<br>Precisión: %{{y:.3f}}<extra></extra>'.format(nombre, f1v)
             fig.add_trace(go.Scatter(
                 x=r_arr[mask], y=p_arr[mask], mode='lines',
                 line=dict(color=cl, dash='dash', width=1.3),
@@ -175,7 +175,7 @@ def fig_pr_scatter(modelos_vis, mostrar_lit_flag, umbral_f1):
         if nm not in modelos_vis:
             continue
         mk = 'diamond' if tipo == 'DL' else 'circle'
-        ht = '<b>{}</b><br>Recall: {:.4f}<br>Precision: {:.4f}<br>Tipo: {}<extra></extra>'.format(nm, rec, prec, tipo)
+        ht = '<b>{}</b><br>Recall: {:.4f}<br>Precisión: {:.4f}<br>Tipo: {}<extra></extra>'.format(nm, rec, prec, tipo)
         fig.add_trace(go.Scatter(
             x=[rec], y=[prec], mode='markers+text',
             name=nm,
@@ -186,9 +186,9 @@ def fig_pr_scatter(modelos_vis, mostrar_lit_flag, umbral_f1):
             hovertemplate=ht,
         ))
     fig.update_layout(**layout_base(
-        title='Precision vs Cobertura por Modelo',
-        xlab='Cobertura (Recall) — fraccion de deslizamientos reales detectados',
-        ylab='Precision — de las alertas, cuantas son reales?',
+        title='Precisión vs Cobertura por Modelo',
+        xlab='Cobertura (Recall) — fracción de deslizamientos reales detectados',
+        ylab='Precisión — de las alertas, ¿cuántas son reales?',
         height=500,
     ))
     fig.update_xaxes(range=[0.62, 1.02])
@@ -218,8 +218,8 @@ def fig_canales():
             hovertemplate=ht,
         ))
     fig.update_layout(**layout_base(
-        title='Canales Satelitales mas Discriminativos',
-        xlab='Brecha de senal (Delta) entre zonas con y sin deslizamiento',
+        title='Canales Satelitales más Discriminativos',
+        xlab='Brecha de señal (Delta) entre zonas con y sin deslizamiento',
         ylab='Canal satelital', height=380,
     ))
     fig.update_xaxes(range=[0, 0.97])
@@ -260,7 +260,7 @@ def fig_dot_plot():
             hovertemplate=ht,
         ))
     fig.update_layout(**layout_base(
-        title='Brecha de Senal entre Clases - Top 6 Canales',
+        title='Brecha de Señal entre Clases — Top 6 Canales',
         xlab='Reflectancia media normalizada',
         ylab='Canal satelital', height=400,
     ))
@@ -306,7 +306,7 @@ def fig_protocolos(modelos_cl, modelos_dl, umbral_f1):
     fig = go.Figure()
     if modelos_cl:
         fig.add_trace(go.Bar(
-            name='14 bandas del satelite',
+            name='14 bandas del satélite',
             x=modelos_cl,
             y=[f1_opt[m] for m in modelos_cl],
             marker_color=C['blue_dark'],
@@ -315,13 +315,13 @@ def fig_protocolos(modelos_cl, modelos_dl, umbral_f1):
             hovertemplate='<b>%{x}</b><br>14 bandas: %{y:.4f}<br>Protocolo optimizado (n=1500)<extra></extra>',
         ))
         fig.add_trace(go.Bar(
-            name='Caracteristicas basicas del terreno',
+            name='Características básicas del terreno',
             x=modelos_cl,
             y=[f1_base[m] for m in modelos_cl],
             marker_color=C['blue_light'],
             text=["{:.3f}".format(f1_base[m]) for m in modelos_cl],
             textposition='outside',
-            hovertemplate='<b>%{x}</b><br>Basico: %{y:.4f}<br>Comparable literatura (n=3799)<extra></extra>',
+            hovertemplate='<b>%{x}</b><br>Básico: %{y:.4f}<br>Comparable literatura (n=3799)<extra></extra>',
         ))
     if modelos_dl:
         fig.add_trace(go.Bar(
@@ -337,7 +337,7 @@ def fig_protocolos(modelos_cl, modelos_dl, umbral_f1):
                   annotation_text='F1={:.2f}'.format(umbral_f1),
                   annotation_position='top right')
     fig.update_layout(**layout_base(
-        title='El protocolo de evaluacion cambia el resultado',
+        title='El protocolo de evaluación cambia el resultado',
         xlab='Modelo', ylab='F1-Score', height=460,
     ))
     fig.update_layout(barmode='group', yaxis_range=[0.3, 0.97])
@@ -366,7 +366,7 @@ def fig_complejidad(modelos, umbral_f1):
                   annotation_font_color=C['dark'])
     fig.update_layout(**layout_base(
         title='Complejidad del modelo vs. resultado real',
-        xlab='F1-Score — capacidad de deteccion',
+        xlab='F1-Score — capacidad de detección',
         ylab='Modelo', height=max(350, len(orden) * 62),
     ))
     fig.update_xaxes(range=[0, 0.97])
@@ -396,8 +396,8 @@ def fig_canales_colombia():
             hovertemplate=ht,
         ))
     fig.update_layout(**layout_base(
-        title='Canales mas discriminativos y su disponibilidad para Colombia',
-        xlab='Brecha de senal (Delta)',
+        title='Canales más discriminativos y su disponibilidad para Colombia',
+        xlab='Brecha de señal (Delta)',
         ylab='Canal satelital', height=380,
     ))
     fig.update_xaxes(range=[0, 0.97])
@@ -439,32 +439,32 @@ def fig_consistencia(folds_dict, umbral_f1):
 
 # ── INICIO ────────────────────────────────────────────────────────
 if seccion == "Inicio":
-    st.markdown("# Deteccion de Deslizamientos con Machine Learning")
-    st.markdown("### Que nos dicen los modelos sobre como proteger Colombia?")
+    st.markdown("# Detección de Deslizamientos con Machine Learning")
+    st.markdown("### ¿Qué nos dicen los modelos sobre cómo proteger Colombia?")
     st.markdown("---")
 
     c1, c2, c3 = st.columns(3)
     kpi_style = "font-size:2.2rem;font-weight:700;color:#DC2626"
     with c1:
-        st.markdown('<div class="kpi-card"><div style="{}">400-600</div><div>eventos/ano en Colombia<br><small style="color:#9CA3AF">SGC, 2023</small></div></div>'.format(kpi_style), unsafe_allow_html=True)
+        st.markdown('<div class="kpi-card"><div style="{}">400-600</div><div>eventos/año en Colombia<br><small style="color:#9CA3AF">SGC, 2023</small></div></div>'.format(kpi_style), unsafe_allow_html=True)
     with c2:
         st.markdown('<div class="kpi-card"><div style="{}">0</div><div>datasets etiquetados colombianos publicos</div></div>'.format(kpi_style), unsafe_allow_html=True)
     with c3:
         st.markdown('<div class="kpi-card"><div style="{}">14</div><div>bandas satelitales analizadas<br>Sentinel-1/2 + DEM</div></div>'.format(kpi_style), unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown('<div class="arg-box"><strong>Argumento central:</strong><br>"El modelo mas sofisticado no siempre gana — y en Colombia, donde no hay un dataset propio, elegir mal el modelo y el protocolo puede ser la diferencia entre una herramienta util y una que falla cuando mas se necesita."</div>', unsafe_allow_html=True)
+    st.markdown('<div class="arg-box"><strong>Argumento central:</strong><br>"El modelo más sofisticado no siempre gana — y en Colombia, donde no hay un dataset propio, elegir mal el modelo y el protocolo puede ser la diferencia entre una herramienta útil y una que falla cuando más se necesita."</div>', unsafe_allow_html=True)
 
     col_a, col_b = st.columns(2)
     with col_a:
-        st.markdown("#### Recorrido del analisis")
+        st.markdown("#### Recorrido del análisis")
         pasos = [
-            ("1. Exploracion",        "Que muestran los datos sin hipotesis?"),
-            ("2. Trampa metodologica","El resultado cambia segun como evalues"),
-            ("3. Colombia vs mundo",  "Donde estamos frente a la literatura?"),
-            ("4. Complejidad",        "Mas parametros no garantizan mejor deteccion"),
-            ("5. Disponibilidad",     "Que informacion satelital necesita Colombia?"),
-            ("6. Confianza",          "En que modelo confiar con datos escasos?"),
+            ("1. Exploración",        "¿Qué muestran los datos sin hipótesis?"),
+            ("2. Trampa metodologica","El resultado cambia según cómo evalúes"),
+            ("3. Colombia vs mundo",  "¿Dónde estamos frente a la literatura?"),
+            ("4. Complejidad",        "Más parámetros no garantizan mejor detección"),
+            ("5. Disponibilidad",     "¿Qué información satelital necesita Colombia?"),
+            ("6. Confianza",          "¿En qué modelo confiar con datos escasos?"),
         ]
         for paso, desc in pasos:
             st.markdown('<div class="hall-box"><strong>{}</strong> — {}</div>'.format(paso, desc), unsafe_allow_html=True)
@@ -477,39 +477,39 @@ if seccion == "Inicio":
         }).sort_values('F1-Score', ascending=False).reset_index(drop=True)
         st.dataframe(resumen, use_container_width=True, hide_index=True)
 
-# ── EXPLORACION ──────────────────────────────────────────────────
-elif seccion == "Exploracion":
-    st.markdown("# Fase Exploratoria — Donde estamos?")
+# ── EXPLORACIÓN ──────────────────────────────────────────────────
+elif seccion == "Exploración":
+    st.markdown("# Fase Exploratoria — ¿Dónde estamos?")
     st.caption("Pasa el cursor para ver valores exactos · Clic en leyenda para mostrar/ocultar · Arrastra para zoom")
     st.markdown("---")
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "H1 - F1 por modelo", "H2 - Precision vs Cobertura",
-        "H3 - Canales satelitales", "H4 - Brecha de senal", "H5 - Variabilidad folds",
+        "H1 - F1 por modelo", "H2 - Precisión vs Cobertura",
+        "H3 - Canales satelitales", "H4 - Brecha de señal", "H5 - Variabilidad folds",
     ])
     modelos_vis = [m for m in TODOS if m in sel]
 
     with tab1:
-        st.markdown("**Que tan bien detecta cada modelo un deslizamiento?**")
+        st.markdown("**¿Qué tan bien detecta cada modelo un deslizamiento?**")
         if modelos_vis:
             st.plotly_chart(fig_f1_barras(modelos_vis, umbral), use_container_width=True)
         else:
             st.warning("Selecciona al menos un modelo.")
 
     with tab2:
-        st.markdown("**Precision o cobertura? Podemos tener los dos?**")
+        st.markdown("**¿Precisión o cobertura? ¿Podemos tener los dos?**")
         st.plotly_chart(fig_pr_scatter(modelos_vis, mostrar_lit, umbral), use_container_width=True)
 
     with tab3:
-        st.markdown("**Que informacion satelital separa mejor las clases?**")
+        st.markdown("**¿Qué información satelital separa mejor las clases?**")
         st.plotly_chart(fig_canales(), use_container_width=True)
 
     with tab4:
-        st.markdown("**Como se diferencian las clases en los canales clave?**")
+        st.markdown("**¿Cómo se diferencian las clases en los canales clave?**")
         st.plotly_chart(fig_dot_plot(), use_container_width=True)
 
     with tab5:
-        st.markdown("**El rendimiento es estable entre experimentos?**")
+        st.markdown("**¿El rendimiento es estable entre experimentos?**")
         folds_vis = {k: v for k, v in fold_data.items()
                      if any(k.startswith(m.split()[0]) for m in sel)} or fold_data
         st.plotly_chart(fig_folds(folds_vis, umbral), use_container_width=True)
@@ -518,12 +518,12 @@ elif seccion == "Exploracion":
 elif seccion == "Argumento":
     st.markdown("# Fase Aclaratoria — Del hallazgo al argumento")
     st.caption("Pasa el cursor sobre los elementos para ver valores · Clic en leyenda para aislar series")
-    st.markdown('<div class="arg-box">Hilo conductor: <strong>Problema Colombia &rarr; que modelo responde?</strong></div>', unsafe_allow_html=True)
+    st.markdown('<div class="arg-box">Hilo conductor: <strong>Problema Colombia &rarr; ¿qué modelo responde?</strong></div>', unsafe_allow_html=True)
     st.markdown("---")
 
     taba1, taba2, taba3, taba4, taba5 = st.tabs([
-        "A1 - Trampa metodologica", "A2 - Colombia vs mundo",
-        "A3 - Complejidad != rendimiento", "A4 - Que necesita Colombia", "A5 - Confianza",
+        "A1 - Trampa metodológica", "A2 - Colombia vs mundo",
+        "A3 - Complejidad != rendimiento", "A4 - ¿Qué necesita Colombia?", "A5 - Confianza",
     ])
     modelos_vis = [m for m in TODOS if m in sel]
     m_cl = [m for m in ['LR', 'SVM', 'RF'] if m in sel]
@@ -532,18 +532,18 @@ elif seccion == "Argumento":
     with taba1:
         cc1, cc2 = st.columns([1, 2])
         with cc1:
-            st.markdown("### El resultado cambia segun como evalues el modelo")
-            st.markdown('<div class="arg-box">Si se reporta solo el protocolo mas favorable, se puede <strong>sobrestimar el rendimiento</strong> en condiciones locales.</div>', unsafe_allow_html=True)
+            st.markdown("### El resultado cambia según cómo evalúes el modelo")
+            st.markdown('<div class="arg-box">Si se reporta solo el protocolo más favorable, se puede <strong>sobrestimar el rendimiento</strong> en condiciones locales.</div>', unsafe_allow_html=True)
             st.markdown("**14 bandas:** protocolo optimizado, n=1500")
-            st.markdown("**Basicas:** comparable a literatura, n=3799")
+            st.markdown("**Básicas:** comparable a literatura, n=3799")
         with cc2:
             st.plotly_chart(fig_protocolos(m_cl, m_dl, umbral), use_container_width=True)
 
     with taba2:
         cc1, cc2 = st.columns([1, 2])
         with cc1:
-            st.markdown("### Donde estamos frente a la literatura internacional?")
-            st.markdown('<div class="arg-box">Los modelos de referencia se entrenaron en Nepal, Peru e Italia. Colombia tiene <strong>terreno andino diferente</strong> y ningun dataset etiquetado.</div>', unsafe_allow_html=True)
+            st.markdown("### ¿Dónde estamos frente a la literatura internacional?")
+            st.markdown('<div class="arg-box">Los modelos de referencia se entrenaron en Nepal, Peru e Italia. Colombia tiene <strong>terreno andino diferente</strong> y ningún dataset etiquetado.</div>', unsafe_allow_html=True)
         with cc2:
             st.plotly_chart(fig_pr_scatter(modelos_vis, mostrar_lit, umbral), use_container_width=True)
 
@@ -551,48 +551,48 @@ elif seccion == "Argumento":
         cc1, cc2 = st.columns([1, 2])
         with cc1:
             st.markdown("### Complejidad del modelo vs. resultado real")
-            st.markdown('<div class="arg-box">U-Net — la arquitectura mas compleja — tiene el <strong>peor F1</strong>. Mas parametros no garantizan mejor deteccion.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="arg-box">U-Net — la arquitectura más compleja — tiene el <strong>peor F1</strong>. Más parámetros no garantizan mejor detección.</div>', unsafe_allow_html=True)
         with cc2:
             st.plotly_chart(fig_complejidad(modelos_vis, umbral), use_container_width=True)
 
     with taba4:
         cc1, cc2 = st.columns([1, 2])
         with cc1:
-            st.markdown("### Que informacion satelital necesita Colombia?")
-            st.markdown('<div class="arg-box">Las bandas <strong>RedEdge</strong> (Sentinel-2) son las mas discriminativas y estan disponibles gratuitamente. El desafio: <strong>etiquetas post-evento</strong>.</div>', unsafe_allow_html=True)
+            st.markdown("### ¿Qué información satelital necesita Colombia?")
+            st.markdown('<div class="arg-box">Las bandas <strong>RedEdge</strong> (Sentinel-2) son las más discriminativas y están disponibles gratuitamente. El desafio: <strong>etiquetas post-evento</strong>.</div>', unsafe_allow_html=True)
         with cc2:
             st.plotly_chart(fig_canales_colombia(), use_container_width=True)
 
     with taba5:
         cc1, cc2 = st.columns([1, 2])
         with cc1:
-            st.markdown("### En cual modelo confiar con datos escasos?")
-            st.markdown('<div class="arg-box">La <strong>consistencia entre folds</strong> es el indicador mas importante cuando los datos son pocos y de un solo evento.</div>', unsafe_allow_html=True)
-            st.markdown("**RF:** Std=0.008 — el mas consistente")
+            st.markdown("### ¿En cuál modelo confiar con datos escasos?")
+            st.markdown('<div class="arg-box">La <strong>consistencia entre folds</strong> es el indicador más importante cuando los datos son pocos y de un solo evento.</div>', unsafe_allow_html=True)
+            st.markdown("**RF:** Std=0.008 — el más consistente")
             st.markdown("**SVM:** Std=0.033 — mayor variabilidad")
         with cc2:
             folds_a5 = {k: v for k, v in fold_data.items()
                         if any(k.startswith(m.split()[0]) for m in sel)} or fold_data
             st.plotly_chart(fig_consistencia(folds_a5, umbral), use_container_width=True)
 
-# ── CONCLUSION ───────────────────────────────────────────────────
-elif seccion == "Conclusion":
-    st.markdown("# Conclusion — Lo que necesita Colombia")
-    st.markdown('<div class="arg-box" style="font-size:1.05rem">La arquitectura viene despues del contexto. Random Forest — interpretable y eficiente con pocos datos — es un punto de partida mas solido que redes profundas disenadas para miles de imagenes segmentadas.</div>', unsafe_allow_html=True)
+# ── CONCLUSIÓN ───────────────────────────────────────────────────
+elif seccion == "Conclusión":
+    st.markdown("# Conclusión — Lo que necesita Colombia")
+    st.markdown('<div class="arg-box" style="font-size:1.05rem">La arquitectura viene después del contexto. Random Forest — interpretable y eficiente con pocos datos — es un punto de partida más sólido que redes profundas diseñadas para miles de imagenes segmentadas.</div>', unsafe_allow_html=True)
     st.markdown("---")
 
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("### Sintesis de hallazgos")
+        st.markdown("### Síntesis de hallazgos")
         tabla = pd.DataFrame({
-            'Hallazgo': ['F1 por modelo', 'Precision vs Cobertura', 'Canales satelitales',
-                         'Brecha de senal', 'Variabilidad folds'],
-            'Observacion': [
+            'Hallazgo': ['F1 por modelo', 'Precisión vs Cobertura', 'Canales satelitales',
+                         'Brecha de señal', 'Variabilidad folds'],
+            'Observación': [
                 'RF supera F1=0.80; U-Net queda muy por debajo',
                 'RF prioriza cobertura (Recall=0.96)',
-                'Bandas RedEdge dominan la discriminacion',
+                'Bandas RedEdge dominan la discriminación',
                 'RedEdge3 tiene brecha 4x mayor que SAR-VH',
-                'RF es el mas consistente (Std=0.008)',
+                'RF es el más consistente (Std=0.008)',
             ],
         })
         st.dataframe(tabla, use_container_width=True, hide_index=True)
@@ -611,8 +611,8 @@ elif seccion == "Conclusion":
             ("Dataset etiquetado nacional", "No existe",
              "#FEE2E2", "#DC2626", "Sin esto, cualquier modelo es extrapolacion"),
             ("Bandas satelitales", "Sentinel-2 disponible (RedEdge incluido)",
-             "#DCFCE7", "#16A34A", "La senal esta — faltan etiquetas post-evento"),
-            ("Protocolo de evaluacion", "Depende del estudio",
+             "#DCFCE7", "#16A34A", "La señal está — faltan etiquetas post-evento"),
+            ("Protocolo de evaluación", "Depende del estudio",
              "#FEF9C3", "#CA8A04", "Usar 5 folds, comparable a literatura"),
             ("Arquitectura apropiada", "RF como punto de partida",
              "#DCFCE7", "#16A34A", "Interpretable, eficiente con pocos datos"),
@@ -627,10 +627,10 @@ elif seccion == "Conclusion":
             ).format(bg=bg, bc=bc, cond=cond, estado=estado, impl=impl)
             st.markdown(card, unsafe_allow_html=True)
 
-        st.markdown("### Proximos pasos")
+        st.markdown("### Próximos pasos")
         st.markdown("""
-1. **Etiquetar** imagenes historicas del SGC (Servicio Geologico Colombiano)
-2. **Descargar** bandas RedEdge de Sentinel-2 via API Copernicus
+1. **Etiquetar** imágenes históricas del SGC (Servicio Geologico Colombiano)
+2. **Descargar** bandas RedEdge de Sentinel-2 vía API Copernicus
 3. **Entrenar y evaluar** con 5 folds y protocolo comparable a literatura
         """)
 
