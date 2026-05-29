@@ -283,7 +283,7 @@ def fig_folds(folds_dict, umbral_f1):
             boxpoints='all', jitter=0.4, pointpos=0,
             marker=dict(size=9, color=color, line=dict(color='white', width=1.5)),
             line=dict(color=color),
-            fillcolor=color + '44',
+            fillcolor='rgba({},{},{},0.25)'.format(int(color[1:3],16), int(color[3:5],16), int(color[5:7],16)),
             hovertemplate=ht,
         ))
     fig.add_vline(x=umbral_f1, line_dash='dash', line_color=C['dark'], line_width=1.5,
